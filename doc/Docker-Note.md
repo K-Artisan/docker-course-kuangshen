@@ -108,7 +108,7 @@ Docker通过隔离机制，可将服务器利用用到极致
 
   
 
-# Docker安装
+
 
 ## Docker的基本组成
 
@@ -134,6 +134,173 @@ Docker 容器通过 Docker 镜像来创建。
 
 ## 安装Docker
 
+### CentOS安装
+
+https://docs.docker.com/engine/install/centos/
+
+
+
+- 卸载旧版本
+
+  ```shell
+  yum remove docker \
+                    docker-client \
+                    docker-client-latest \
+                    docker-common \
+                    docker-latest \
+                    docker-latest-logrotate \
+                    docker-logrotate \
+                    docker-engine
+  ```
+
+  
+
+- 在线下载并安装 yum-util
+
+   Install the `yum-utils` package (which provides the `yum-config-manager` utility) and set up the **stable** repository. 
+
+  ```shell
+  yum install -y yum-util
+  ```
+
+
+
+- 设置镜像仓库
+
+  默认是国外的，下载很慢
+
+  ```she
+  yum-config-manager \
+      --add-repo \
+      https://download.docker.com/linux/centos/docker-ce.repo
+  ```
+
+​       使用国内镜像，比如：阿里
+
+      ```shell
+   yum-config-manager \
+        --add-repo \
+        http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+      ```
+
+ 
+
+- 更新yum 软件包的索引
+
+  ```shell
+  yum makecache fast
+  ```
+
+  
+
+- 安装Docker
+
+Docker-ce 社区版本
+
+Docker-ee 企业版本
+
+**安装最新版本**
+
+```shell
+yum install docker-ce docker-ce-cli containerd.io
+```
+
+
+
+**安装指定版本**
+
+```shell
+yum list docker-ce --showduplicates | sort -r
+yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io
+```
+
+
+
+- 启动Docker
+
+  ```shell
+  systemctl start docker
+  ```
+
+  
+
+- 测试Docker
+
+  ```shell
+  # 测试是否安装成功
+  docker version
+  ```
+
+  测试helloword
+
+  ```shell
+  [root@centos7 ~]# docker run hello-world
+  Unable to find image 'hello-world:latest' locally
+  latest: Pulling from library/hello-world
+  b8dfde127a29: Pull complete 
+  Digest: sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24
+  Status: Downloaded newer image for hello-world:latest
+  
+  Hello from Docker!
+  This message shows that your installation appears to be working correctly.
+  
+  To generate this message, Docker took the following steps:
+   1. The Docker client contacted the Docker daemon.
+   2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+      (amd64)
+   3. The Docker daemon created a new container from that image which runs the
+      executable that produces the output you are currently reading.
+   4. The Docker daemon streamed that output to the Docker client, which sent it
+      to your terminal.
+  
+  To try something more ambitious, you can run an Ubuntu container with:
+   $ docker run -it ubuntu bash
+  
+  Share images, automate workflows, and more with a free Docker ID:
+   https://hub.docker.com/
+  
+  For more examples and ideas, visit:
+   https://docs.docker.com/get-started/
+  
+  ```
+
+  
+
+- 查看镜像
+
+```shell
+[root@centos7 ~]# docker images
+REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
+hello-world   latest    d1165f221234   12 days ago   13.3kB
+```
+
+#### 卸载
+
+1. Uninstall the Docker Engine, CLI, and Containerd packages:
+
+   删除docker依赖
+
+   ```
+   $ sudo yum remove docker-ce docker-ce-cli containerd.io
+   ```
+
+2. Images, containers, volumes, or customized configuration files on your host are not automatically removed. To delete all images, containers, and volumes:
+
+   删除docker资源
+
+   ```
+   $ sudo rm -rf /var/lib/docker
+   $ sudo rm -rf /var/lib/containerd
+   ```
+
+
+
+
+
+
+
+### Window10 安装
+
 
 
 ## 检查安装
@@ -141,7 +308,7 @@ Docker 容器通过 Docker 镜像来创建。
 检查安装是否成功：
 
 ```powershell
-docker run hello-world
+
 ```
 
 
@@ -195,10 +362,6 @@ https://blog.csdn.net/u011700186/article/details/109452566
 
 
 ### 其它源
-
-
-
-#### 
 
 参考资料：
 
@@ -471,7 +634,7 @@ docker pull docker.io/library/mysql:latest
 
 指定的版本必须是官网存在的
 
-比如：mysql https://hub.docker.com/_/mysql指明了支持的版本
+比如：mysql https://hub.docker.com/_/mysql  指明了支持的版本
 
 ```C#
 Supported tags and respective Dockerfile links
@@ -726,6 +889,8 @@ PS C:\Users\wei> docker ps -aq #显示所有容器的ID
 1b5b876a7037
 c86e09381431
 ```
+
+ 
 
 
 
@@ -1193,7 +1358,7 @@ PS C:\Users\wei> docker inspect 57f4ef66e9d4
 **方式一：**
 
 ```powershell
-docker exec -it 容器ID bashShell
+docker exec -it 容器ID bash/bash
 ```
 
 示例：
@@ -1208,6 +1373,14 @@ PS C:\Users\wei> docker exec -it 57f4ef66e9d4 /bin/bash
 bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
 ```
 
+这种方式突出容器使用
+
+```shell
+[root@57f4ef66e9d4 /]# exit
+```
+
+
+
 
 
 **方式二**
@@ -1215,8 +1388,6 @@ bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  s
 ```powershell
 docker attach 容器ID
 ```
-
-
 
 示例：
 
@@ -1734,7 +1905,7 @@ Kibana容器和ES容器 是相互隔离，容器间如何连接？
 
 
 
-# 可视化
+# 可视化管理工具
 
 ## portainer
 
@@ -1755,6 +1926,39 @@ docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/doc
 `-v /var/run/docker.sock:/var/run/docker.sock`:把它的数据挂载到本机
 
 `--privileged=true`:授权
+
+## Portainer-CentOS
+
+Docker图形化管理工具，提供一个后台面板供我们操作
+
+```shell
+docker run -d -p 8088:9000 \
+--restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer
+```
+
+
+
+
+
+在虚拟机所在的主机（Windows 10）中打开浏览器，访问：http://192.168.130.129:8088
+
+![1616051429818](images/Docker-Note/1616051429818.png)
+
+![1616051476697](images/Docker-Note/1616051476697.png)
+
+选择Local
+![1616051744548](images/Docker-Note/1616051744548.png)
+
+
+![1616051774989](images/Docker-Note/1616051774989.png)
+
+查看容器信息：
+
+![1616052095211](images/Docker-Note/1616052095211.png)
+
+
+
+## Portainer-Windows10
 
 用以上在window 10 启动不成功（可能是因为宿主机不是Linux的原因），使用如下命令代替
 
@@ -2010,3 +2214,248 @@ PS C:\Users\wei> docker image inspect redis
 下图展示了一个稍微复杂的三层镜像，在外部看来整个镜像只有6个文件，因为最上层的文件7是文件5的一个更新版本
 
 <img src="images/Docker-Note/1614218880092.png" alt="1614218880092" style="zoom:80%;" />
+
+
+
+这种情况下，上层镜像层中大文件覆盖了底层镜像层中欧大文件 ，这样就是的文件的更新版本作为 一个新的镜像层添加到镜像中，
+
+Docker通过存储引擎（新版本采用快照机制）的方式来实现镜像层堆栈，并保证多镜像层对外展示为统一的文件系统。
+
+Linux上可用的存储 引擎有AUFS、Overlay2、DeviceMapper Btfs以及ZFS。顾名思义，每种存储疫情都基于Linux中 对应的文件系统或者块设备技术，并且每种存储疫情都有其独特的性能特点。
+
+Docker在Windows上仅支持windowsfilter 一种存储引擎，该引擎基于NTFS文件系统之上实现 分层和COW
+
+下图展示了与系统显示相同的三层 镜像，所有镜像层堆叠并合并，对外体统统一的视图
+
+<img src="images/Docker-Note/1616063852991.png" alt="1616063852991" style="zoom: 80%;" />
+
+
+
+特点
+
+Docker镜像都是只读，当容器启动时，一个新的可写层被加载到啊镜像的顶部
+
+这一层就是我们通常说的容器层，容器之下都叫镜像层
+
+ <img src="images/Docker-Note/1616064265576.png" alt="1616064265576" style="zoom:80%;" />
+
+如何提交一个自己的镜像，commit镜像
+
+
+
+# Commit镜像
+
+## 创建新镜像
+
+docker commit 提交容器成为一个新的副本
+
+```shell
+docker commit  -m="提交信息 描述"  -a="作者" 容器ID 目标镜像名:[TAG]
+```
+
+实战测试
+
+下载运行
+
+```shell
+[root@centos7 ~]# docker pull tomcat:9.0
+[root@centos7 ~]# docker run -it -p 8080:8080 tomcat 
+
+```
+
+使用Xshell登录Linux系统，并进入tomcat容器
+
+```shell
+[root@centos7 ~]# docker ps
+CONTAINER ID   IMAGE                 COMMAND             CREATED         STATUS         PORTS                    NAMES
+1f7b945ffe13   tomcat                "catalina.sh run"   5 minutes ago   Up 5 minutes   0.0.0.0:8080->8080/tcp   laughing_bhabha
+
+[root@centos7 ~]# docker exec -it 1f7b945ffe13 /bin/bash
+root@1f7b945ffe13:/usr/local/tomcat# 
+
+```
+
+启动一个默认的tomcat，发现这个默认的tomcat是一个没有webapps应用的，镜像的原因，官方 的镜像默认webapps下面是没有文件的
+
+```shell
+root@1f7b945ffe13:/usr/local/tomcat# cd webapps
+root@1f7b945ffe13:/usr/local/tomcat/webapps# ls
+```
+
+
+
+自己拷贝文件
+
+```shell
+root@1f7b945ffe13:/usr/local/tomcat# cp -r webapps.dist/* webapps/
+root@1f7b945ffe13:/usr/local/tomcat# cd webapps
+root@1f7b945ffe13:/usr/local/tomcat/webapps# ls
+ROOT  docs  examples  host-manager  manager
+
+```
+
+测试下tomcat部署是否成功，在虚拟机所在Windows10 中打开浏览器，访问：
+
+http://192.168.130.129:8080/
+
+<img src="images/Docker-Note/1616066369653.png" alt="1616066369653" style="zoom:80%;" />
+
+
+
+现在我们把这个已经修改后的容器打包成功一个新的镜像**mytomcat**，
+
+```shell
+root@1f7b945ffe13:/usr/local/tomcat/webapps# exit
+exit
+[root@centos7 ~]# docker ps
+CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS         PORTS                    NAMES
+1f7b945ffe13   tomcat                "catalina.sh run"   25 minutes ago   Up 9 minutes   0.0.0.0:8080->8080/tcp   laughing_bhabha
+
+# 创建一个新的镜像 
+[root@centos7 ~]# docker  commit -a="kkk" -m="add webapps app" 1f7b945ffe13 mytomcat:1.0
+sha256:c95e6d30363e77e6e36997bde0a2822d8d1d4279555ea70eb5d1bf7b2d4a2e1d
+[root@centos7 ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED         SIZE
+mytomcat              1.0       c95e6d30363e   6 seconds ago   672MB
+tomcat                9.0       08efef7ca980   4 days ago      667MB
+tomcat                latest    08efef7ca980   4 days ago      667MB
+
+```
+
+> 说明：docker commit  -m="提交信息 描述"  -a="作者" 容器ID 目标镜像名:[TAG]
+
+
+
+## 使用新镜像
+
+这个新的镜像**mytomcat**,其weapps下有文件，以后使用这个新镜像运行的容器就再也不需要往weapps文件里面 拷贝文件了。
+
+以后就可以使用这个自己的修改过新的镜像,
+
+```shell
+
+#把旧的tomcat容器停止，因为端口冲突
+[root@centos7 ~]# docker start 1f7b945ffe13
+
+[root@centos7 ~]# docker run -it -p 8090:8090 mytomcat:1.0
+ctl+C
+[root@centos7 ~]# docker ps -a
+CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS                        PORTS                    NAMES
+
+ac3799d198f9   tomcat                "catalina.sh run"   12 minutes ago   Up 11 minutes                 0.0.0.0:8080->8080/tcp   trusting_snyder
+
+1f7b945ffe13   tomcat                "catalina.sh run"   5 minutes ago   Up 5 minutes 
+
+#运行新的tomcat
+[root@centos7 ~]# docker start ac3799d198f9 
+
+```
+
+访问：http://192.168.130.129:8080/ 可以访问
+
+
+
+## 原始镜像与新的镜像对比
+
+<img src="images/Docker-Note/1616064265576.png" alt="1616064265576" style="zoom:80%;" />
+
+把我们已经操作过的层（上图的容器层）再次打包成一个新的镜像，一层一层的叠加
+
+<img src="images/Docker-Note/1616067003945.png" alt="1616067003945" style="zoom:80%;" />
+
+
+
+****
+
+参生新的一层
+
+
+
+- 原tomcat
+
+```shell
+[root@centos7 ~]# docker inspect tomcat 
+            "Layers": [                                                              "sha256:0e41e5bdb921aea3c3c9bb5eb61c004fdb6286fe8800f266887243e268fb957a",
+  "sha256:644448d6e8779b7078d69c3a080529aa7924f8efb555c589839557f3597bd368",
+  "sha256:81496d8c72c2f2c22627354efc459ef8d703e8110d72b8f0d8af121361d5c82c",
+  "sha256:bde301416dd2132d01b1b042eed25f8aa59350fbbe61ebdacd04b98148f9c07e",
+  "sha256:59f1e8e1ce6624b08eb273d66bcf2b524a7238c96f170049295f5051b087da5c",
+  "sha256:a4ed737b0c8fe6e638bb1c24e611e7f6f1b74ba08f7900305e04e84caf82a6e2",
+  "sha256:b219714e1f91e969787b364a328b28f430d6073cf91ccabe668b0e807aa28887",
+  "sha256:6921406a23782bcd0b554108285f16251c6e18fc1a9e61735fb6fbd0e0a5e170",
+  "sha256:7e6c506447e919b7fd5d1652cef148a34fcc27cee8a755e6f16618f897adf0a6",
+  "sha256:34c7884ee1258cfbfb60f91e090e6fc58ced04dc36f035743c0dbc9613ff8a09"
+            ]
+
+```
+
+tomcat原有10层，
+
+
+
+- 新mytomcat镜像
+
+```shell
+[root@centos7 ~]# docker inspect mytomcat:1.0
+            "Layers": [
+               "sha256:0e41e5bdb921aea3c3c9bb5eb61c004fdb6286fe8800f266887243e268fb957a",
+               "sha256:644448d6e8779b7078d69c3a080529aa7924f8efb555c589839557f3597bd368",
+               "sha256:81496d8c72c2f2c22627354efc459ef8d703e8110d72b8f0d8af121361d5c82c",
+               "sha256:bde301416dd2132d01b1b042eed25f8aa59350fbbe61ebdacd04b98148f9c07e",
+               "sha256:59f1e8e1ce6624b08eb273d66bcf2b524a7238c96f170049295f5051b087da5c",
+               "sha256:a4ed737b0c8fe6e638bb1c24e611e7f6f1b74ba08f7900305e04e84caf82a6e2",
+               "sha256:b219714e1f91e969787b364a328b28f430d6073cf91ccabe668b0e807aa28887",
+               "sha256:6921406a23782bcd0b554108285f16251c6e18fc1a9e61735fb6fbd0e0a5e170",
+               "sha256:7e6c506447e919b7fd5d1652cef148a34fcc27cee8a755e6f16618f897adf0a6",
+               "sha256:34c7884ee1258cfbfb60f91e090e6fc58ced04dc36f035743c0dbc9613ff8a09",
+               "sha256:9287f4ff67de7e69e970708532da8724c97527228db46e0f9593ee2d1518b595"
+            ]
+
+```
+
+共11层，多出了这一层：
+
+```shell
+"sha256:9287f4ff67de7e69e970708532da8724c97527228db46e0f9593ee2d1518b595"
+```
+
+
+
+【里程碑：至此 Docker入门】
+
+
+
+# 容器数据卷
+
+
+
+
+
+# DockerFile
+
+
+
+
+
+# Docker 网络
+
+
+
+
+
+# 企业实战
+
+## Docker Compose
+
+
+
+## Docker Swarm
+
+
+
+集群
+
+
+
+## CI/CD Jenkins
+
