@@ -218,11 +218,31 @@ yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd
 
 - 启动Docker
 
+  **手动启动Docker**
+
   ```shell
   systemctl start docker
   ```
 
-  
+​      
+
+​       **设置Docker开机启动**
+
+      ```shell
+systemctl start docker
+systemctl enable docker
+# reboot
+      ```
+
+​      
+
+​     重启命令 ：
+
+  ```shell
+systemctl restart docker
+  ```
+
+
 
 - 测试Docker
 
@@ -2243,9 +2263,9 @@ Docker镜像都是只读，当容器启动时，一个新的可写层被加载�
 
 
 
-# Commit镜像
+## Commit镜像
 
-## 创建新镜像
+### 创建新镜像
 
 docker commit 提交容器成为一个新的副本
 
@@ -2326,7 +2346,7 @@ tomcat                latest    08efef7ca980   4 days ago      667MB
 
 
 
-## 使用新镜像
+### 使用新镜像
 
 这个新的镜像**mytomcat**,其weapps下有文件，以后使用这个新镜像运行的容器就再也不需要往weapps文件里面 拷贝文件了。
 
@@ -2337,7 +2357,7 @@ tomcat                latest    08efef7ca980   4 days ago      667MB
 #把旧的tomcat容器停止，因为端口冲突
 [root@centos7 ~]# docker start 1f7b945ffe13
 
-[root@centos7 ~]# docker run -it -p 8090:8090 mytomcat:1.0
+[root@centos7 ~]# docker run -it -p 8080:8080 mytomcat:1.0
 ctl+C
 [root@centos7 ~]# docker ps -a
 CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS                        PORTS                    NAMES
@@ -2355,7 +2375,7 @@ ac3799d198f9   tomcat                "catalina.sh run"   12 minutes ago   Up 11 
 
 
 
-## 原始镜像与新的镜像对比
+### 原始镜像与新的镜像对比
 
 <img src="images/Docker-Note/1616064265576.png" alt="1616064265576" style="zoom:80%;" />
 
@@ -2421,7 +2441,44 @@ tomcat原有10层，
 
 
 
+## Docker 容器开机启动
+
+https://www.jianshu.com/p/a5b17c6cbac3
+
+ 启动时加`--restart=always `
+
+```shell
+docker run -it -p 8080:8080 mytomcat:1.0 --restart=always  ??# 不行
+```
+
+`--restart`参数值：
+
+```csharp
+no             不自动重启容器. (默认value)
+on-failure     容器发生error而退出(容器退出状态不为0)重启容器
+unless-stopped 在容器已经stop掉或Docker stoped/restarted的时候才重启容器
+always         在容器已经stop掉或Docker stoped/restarted的时候才重启容器
+```
+
+
+
+如果已经启动的项目，则使用update更新： 
+
+```shell
+[root@centos7 ~]# docker ps
+CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS          PORTS                    NAMES
+9c8c7634cd63   mytomcat:1.0          "catalina.sh run"   57 minutes ago   Up 11 seconds   0.0.0.0:8080->8080/tcp   admiring_elbakyan
+
+[root@centos7 ~]# docker update --restart=always 9c8c7634cd63
+9c8c7634cd63
+
+```
+
+
+
 【里程碑：至此 Docker入门】
+
+
 
 
 
