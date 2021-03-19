@@ -1393,13 +1393,15 @@ PS C:\Users\wei> docker exec -it 57f4ef66e9d4 /bin/bash
 bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
 ```
 
-这种方式突出容器使用
+这种方式退出容器并停止使用
 
 ```shell
 [root@57f4ef66e9d4 /]# exit
 ```
 
+exit方式退出 后，容器停止运行
 
+使用组合键【Ctrl + P + Q】，退出不停止容器（方式一我们进入了容器，以这种方式退出）
 
 
 
@@ -2484,11 +2486,893 @@ CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS
 
 # 容器数据卷
 
+## 什么是容器数据卷
+
+如果数据在容器中 ，那么容器删除 了。数据就会丢失！
+
+比如在容器中安装了MySqL，容器别删除，数据也被删除，这是我们不想看到的
+
+这就参数一个需求：要求数据可以存储在本地，而不是存在在容器中
+
+
+
+容器之间可以有一个数据共享的技术！Docker容器产生的数据，同步到本地！
+
+这就是卷技术。目录的挂载，将我们容器内的目录挂载到Linux上面。
+
+<img src="images/Docker-Note/1616129020509.png" alt="1616129020509" style="zoom:80%;" />
+
+一句话：容器的持久化和同步操作，容器间也是可以数据共享的
+
+
+
+## 使用数据卷
+
+### 使用命令挂载
+
+
+
+**方式一：使用命令挂载**
+
+```shell
+docker run -it -v  主机目录:容器内目录
+```
+
+
+
+创建容器CentOS
+
+```shell
+[root@centos7 ~]# docker run -it -v /home/test:/home centos /bin/bash
+Unable to find image 'centos:latest' locally
+latest: Pulling from library/centos
+7a0437f04f83: Pull complete 
+Digest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1
+Status: Downloaded newer image for centos:latest
+[root@6b3452080ab5 /]# 
+
+```
+
+
+
+打开另一个终端：
+
+```shell
+[root@centos7 ~]# ls /home
+majiang  test
+[root@centos7 ~]# ls /home/test
+[root@centos7 ~]# docker ps
+CONTAINER ID   IMAGE                 COMMAND             CREATED         STATUS         PORTS                    NAMES
+6b3452080ab5   centos                "/bin/bash"         3 minutes ago   Up 3 minutes                            mystifying_leakey
+
+[root@centos7 ~]# docker inspect 6b3452080ab5
+.......
+
+        "Mounts": [  #挂载 -v 卷
+            {
+                "Type": "bind",
+                "Source": "/home/test",   #主机内地址
+                "Destination": "/home",   # docker容器内地址
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+
+.......
+
+```
+
+
+
+### 数据同步
+
+- 容器数据同步到主机
+
+<img src="images/Docker-Note/1616131040324.png" alt="1616131040324" style="zoom:80%;" />
+
+
+
+- 主机的数据同步到容器内
+
+<img src="images/Docker-Note/1616132066983.png" alt="1616132066983" style="zoom:80%;" />
+
+
+
+- 容器停止，数据同样同步
+
+<img src="images/Docker-Note/1616133354092.png" alt="1616133354092" style="zoom:80%;" />
+
+
+
+```shell
+[root@centos7 ~]# docker exec -it 6b3452080ab5 /bin/bash
+[root@6b3452080ab5 /]# cat /home/test.java
+[root@6b3452080ab5 /]# exit
+exit
+[root@centos7 ~]# docker stop 6b3452080ab5
+6b3452080ab5
+
+#停止容器后，在主机上编辑数据
+[root@centos7 ~]# echo "hello docker" > /home/test/test.java
+[root@centos7 ~]# cat /home/test/test.java
+hello docker
+
+
+#在主机上编辑数据后，重启容器
+[root@centos7 ~]# docker start 6b3452080ab5
+6b3452080ab5
+[root@centos7 ~]# docker exec -it 6b3452080ab5 /bin/bash
+[root@6b3452080ab5 /]# cat /home/test.java
+hello docker
+[root@6b3452080ab5 /]# 
+
+```
+
+
+
+### 优点
+
+修改本地即可，容器内数据自动同步
+
+
+
+## 实战：MySQL同步数据
+
+https://hub.docker.com/_/mysql
+
+
+
+### 下载镜像
+
+```shell
+[root@centos7 ~]# docker pull mysql:5.7
+```
+
+
+
+### 运行容器，并数据挂载
+
+```shell
+docker run -d -p 3310:3306\
+    --name mysql\
+    -v /home/mysql/config:/etc/mysql/conf.d\
+    -v /home/mysql/data:/var/lib/mysql\
+    -e MYSQL_ROOT_PASSWORD=123456\
+    mysql:5.7
+```
+
+`-e`配置环境
+
+`-d`后台运行
+
+`-p`端口映射
+
+`-v`数据卷挂载
+
+`--name`容器名字
+
+执行：
+
+```shell
+[root@centos7 ~]# docker run -d -p 3310:3306\
+>     --name mysql\
+>     -v /home/mysql/config:/etc/mysql/conf.d\
+>     -v /home/mysql/data:/var/lib/mysql\
+>     -e MYSQL_ROOT_PASSWORD=123456\
+>     mysql:5.7
+f2af4a4cbc7f0193ef8f630434ad425b79b7378fc1d8b97f0806135a96e02e5b
+[root@centos7 ~]# 
+
+```
+
+
+
+### 连接数据库
+
+<img src="images/Docker-Note/1616137290266.png" alt="1616137290266" style="zoom:80%;" />![1616137506029](images/Docker-Note/1616137506029.png)
+
+​         
+
+<img src="images/Docker-Note/1616137290266.png" alt="1616137290266" style="zoom:80%;" />![1616137506029](images/Docker-Note/1616137506029.png)
+
+
+
+在主机中 查看MySQL的数据
+
+```shell
+[root@centos7 ~]# docker ps
+CONTAINER ID   IMAGE                 COMMAND                  CREATED          STATUS             PORTS                               NAMES
+f2af4a4cbc7f   mysql:5.7             "docker-entrypoint.s…"   31 minutes ago   Up 31 minutes      33060/tcp, 0.0.0.0:3310->3306/tcp   mysql
+
+[root@centos7 ~]# cd /home/mysql
+[root@centos7 mysql]# ls
+config  data
+[root@centos7 mysql]# ls /home/mysql/data
+auto.cnf         client-key.pem  ib_logfile1         private_key.pem  sys
+ca-key.pem       ib_buffer_pool  ibtmp1              public_key.pem
+ca.pem           ibdata1         mysql               server-cert.pem
+client-cert.pem  ib_logfile0     performance_schema  server-key.pem
+[root@centos7 mysql]# 
+
+```
+
+
+
+### 新建数据库
+
+新建数据库`test_db`:
+
+<img src="images/Docker-Note/1616137846585.png" alt="1616137846585" style="zoom:80%;" />
+
+
+
+在主机查看新建的数据的数据
+
+```shell
+[root@centos7 mysql]# ls /home/mysql/data
+auto.cnf         client-key.pem  ib_logfile1         private_key.pem  sys
+ca-key.pem       ib_buffer_pool  ibtmp1              public_key.pem   test_db 
+ca.pem           ibdata1         mysql               server-cert.pem
+client-cert.pem  ib_logfile0     performance_schema  server-key.pem
+[root@centos7 mysql]# 
+
+```
+
+多出了一个数据文件`test_db`
+
+
+
+### 删除容器，数据还在
+
+现在删除容器，并检查数据是否还在
+
+```shell
+#删除容器
+[root@centos7 mysql]# docker rm -f mysql
+mysql
+
+[root@centos7 mysql]# docker ps
+CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS      NAMES
+
+#数据还在
+[root@centos7 mysql]# ls /home/mysql/data
+auto.cnf         client-key.pem  ib_logfile1         private_key.pem  sys
+ca-key.pem       ib_buffer_pool  ibtmp1              public_key.pem   test_db
+ca.pem           ibdata1         mysql               server-cert.pem
+client-cert.pem  ib_logfile0     performance_schema  server-key.pem
+```
+
+发现，**删除容器后，我们挂载到本地的数据卷依旧没有丢失，这就实现了容器数据持久化**
+
+
+
+## 具名挂载和匿名挂载
+
+
+
+### **匿名挂载**
+
+挂载时只指定了 容器内目录，没有主机目录
+
+```shell
+ -v 卷名:容器内目录
+```
+
+
+
+示例：
+
+ ```shell
+# 查看所有 Volume (卷)情况
+[root@centos7 ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     7a740c760c67e3c367021ec87eaeba18b21757177734b7bc334d8ede9fb9930e
+
+# 匿名挂载
+[root@centos7 ~]# docker run -d -P --name nginx01 -v /ect/nginx nginx
+Unable to find image 'nginx:latest' locally
+latest: Pulling from library/nginx
+6f28985ad184: Already exists 
+29f7ebf60efd: Pull complete 
+879a7c160ac6: Pull complete 
+de58cd48a671: Pull complete 
+be704f37b5f4: Pull complete 
+158aac73782c: Pull complete 
+Digest: sha256:d2925188effb4ddca9f14f162d6fba9b5fab232028aa07ae5c1dab764dca8f9f
+Status: Downloaded newer image for nginx:latest
+a1f4d483fa6aa4d4220393f4bd5c95c9d3b2737d843636bdcdc7eaeaeb5ca770
+
+
+[root@centos7 ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     7a740c760c67e3c367021ec87eaeba18b21757177734b7bc334d8ede9fb9930e
+# 这个就是刚刚多出来的匿名卷（Volume）
+local     508d8936e75ac4febec9938c550b5fb385471bf82e2595207978a4128435716a
+[root@centos7 ~]# 
+
+ ```
+
+
+
+### **具名挂载**
+
+具名挂载：
+
+```shell
+ -v 卷名:容器内目录
+```
+
+
+
+示例：
+
+```shell
+# 具名挂载,注意：
+# 不是 -v /juming-nginx:ect/nginx nginx
+# 而是 -v  juming-nginx:ect/nginx nginx，格式是,“卷名:容器内目录"
+[root@centos7 ~]# docker run -d -P --name nginx02 -v juming-nginx:/ect/nginx nginx
+1714ca08f7ae2100776052cacc214088d1fd6f8887a90d8bd0f21d13c7660836
+
+[root@centos7 ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     7a740c760c67e3c367021ec87eaeba18b21757177734b7bc334d8ede9fb9930e
+local     508d8936e75ac4febec9938c550b5fb385471bf82e2595207978a4128435716a
+#具名挂载的卷名
+local     juming-nginx
+[root@centos7 ~]# 
+
+```
+
+
+
+### 查看具名卷信息
+
+```shell
+[root@centos7 ~]# docker volume inspect juming-nginx
+[
+    {
+        "CreatedAt": "2021-03-19T16:55:15+08:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/juming-nginx/_data",
+        "Name": "juming-nginx",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+```
+
+所有的docker容器内的卷，没有指定目录的情况下，都是在主机的 如下目录
+
+```shell
+/var/lib/docker/volumes/xxxxxx/_data
+```
+
+
+目录下的`_data`文件中：
+
+```shell
+[root@centos7 ~]# cd /var/lib/docker
+[root@centos7 docker]# ls
+buildkit    image    overlay2  runtimes  tmp    volumes
+containers  network  plugins   swarm     trust
+[root@centos7 docker]# cd volumes
+[root@centos7 volumes]# ls
+508d8936e75ac4febec9938c550b5fb385471bf82e2595207978a4128435716a  juming-nginx
+7a740c760c67e3c367021ec87eaeba18b21757177734b7bc334d8ede9fb9930e  metadata.db
+backingFsBlockDev
+[root@centos7 volumes]# cd juming-nginx/
+[root@centos7 juming-nginx]# ls
+_data
+
+```
+
+​		  我们通过具名挂载可以方便地找到我们的一个卷，大多数情况下使用**具名挂载**
+
+
+
+### 如何确定挂载类型
+
+   如何确定3中挂载类型：
+
+- 匿名挂载：-v 容器内路径
+- 具名挂载：-v 卷名:容器内路径
+- 指定路径挂载：-v 宿主机路径:容器内路径
+
+
+
+### 拓展
+
+通过 
+
+`-v 容器内路径:ro ` 
+
+ro:即readonly，只读，**容器内对路径是只读权限，要改变指定路径的内容，只能通过宿主机来操作**
+
+
+
+或者
+
+`-v 卷名:容器内路径:rw`
+
+ro:即readonly，可读可写
+
+改写读写权限
+
+```shell
+# 只读
+docker run -d -P --name nginx03 -v juming-nginx:/ect/nginx:ro nginx
+
+#可读可写
+docker run -d -P --name nginx04 -v juming-nginx:/ect/nginx:rw nginx
+```
+
+## 初始DockerFile
+
+DockerFile就是用来构建啊Docker镜像的构建文件，一个命令脚本文件,通过这个脚本可以生成一个镜像。
+
+镜像是一层一层，脚本一个个的命令，每个命令就是一层
+
+
+
+### 创建镜像文件
+
+```shell
+[root@centos7 ~]# cd /home
+[root@centos7 home]# mkdir docker-test-volume
+[root@centos7 home]# cd docker-test-volume/
+[root@centos7 docker-test-volume]# vim dockerfile01
+FROM centos
+
+VOLUME ["volume01","volume02"] 
+
+CMD echo “------end-------”
+CMD /bin/bash
+
+
+```
+
+> 特别注意：
+>
+> VOLUME  （有空格）   ["volume01","volume02"] 
+
+
+
+dockerfile01
+
+```shell
+FROM centos
+
+VOLUME ["volume01","volume02"] 
+
+CMD echo “------end-------”
+CMD /bin/bash
+```
+
+
+
+### 构建镜像
+
+```shell
+[root@centos7 docker-test-volume]# docker build -f dockerfile01 -t majiang/centos:1.0 .
+Sending build context to Docker daemon  2.048kB
+Step 1/4 : FROM centos
+ ---> 300e315adb2f
+Step 2/4 : VOLUME ["volume01","volume02"]
+ ---> Running in 885bc6df7786
+Removing intermediate container 885bc6df7786
+ ---> d07de828bf41
+Step 3/4 : CMD echo “------end-------”
+ ---> Running in 94261bb0d386
+Removing intermediate container 94261bb0d386
+ ---> 9b11cd0e5848
+Step 4/4 : CMD /bin/bash
+ ---> Running in ea8ce204da11
+Removing intermediate container ea8ce204da11
+ ---> 83f355b0d2df
+Successfully built 83f355b0d2df
+Successfully tagged majiang/centos:1.0
+
+[root@centos7 docker-test-volume]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED         SIZE
+majiang/centos        1.0       83f355b0d2df   3 minutes ago   209MB
+
+```
+
+
+
+解析：
+
+ **--tag, -t:** 镜像的名字及标签，通常 name:tag 或者 name 格式；可以在一次构建中为一个镜像设置多个标签。 
+
+
+
+### 启动容器
+
+启动 我们自定义的容器
+
+```shell
+[root@centos7 docker-test-volume]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED         SIZE
+majiang/centos        1.0       83f355b0d2df   3 minutes ago   209MB
+
+[root@centos7 docker-test-volume]# docker run -it 83f355b0d2df  /bin/bash
+[root@a1e1552b580b /]# ls
+bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var  volume01	volume02
+[root@a1e1552b580b /]# 
+
+```
+
+其中，`volume01	volume02` 这两个目录是我们生成镜像时，自动挂载的数据卷目录，
+
+这个卷和外部一定有一个同步的目录
+
+```shell
+VOLUME ["volume01","volume02"] 
+```
+
+其实，是一个匿名挂载：
+
+```shell
+[root@a1e1552b580b /]# cd volume01
+[root@a1e1552b580b volume01]# touch container.txt
+# 容器退出了
+[root@a1e1552b580b volume01]# eixt
+
+[root@centos7 docker-test-volume]# docker ps -a
+CONTAINER ID   IMAGE                 COMMAND                  CREATED             STATUS                       PORTS                    NAMES
+a1e1552b580b   83f355b0d2df          "/bin/bash"              8 minutes ago       Exited (127) 2 minutes ago                            loving_turing
+
+# 重启这个容器
+[root@centos7 docker-test-volume]# docker start a1e1552b580b
+6b3452080ab5
+[root@centos7 docker-test-volume]# docker inspect a1e1552b580b
+.......
+# 挂载宿主机的目录
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "329a56c49d6c4eee45b3124587b980b12b12347c4d8c50a9a037752bd9b6a84e",
+                "Source": "/var/lib/docker/volumes/329a56c49d6c4eee45b3124587b980b12b12347c4d8c50a9a037752bd9b6a84e/_data",
+                "Destination": "volume01",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "58cf6b46571971b384b9cded0deee34794a83760b67212ff8de6f4c1319edf4b",
+                "Source": "/var/lib/docker/volumes/58cf6b46571971b384b9cded0deee34794a83760b67212ff8de6f4c1319edf4b/_data",
+                "Destination": "volume02",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+
+......
+
+```
+
+从上面的容器信息中节点`Mounts`，可以看待挂载宿主机的目录为：
+
+```shell
+/var/lib/docker/volumes/329a56c49d6c4eee45b3124587b980b12b12347c4d8c50a9a037752bd9b6a84e/_data
+
+/var/lib/docker/volumes/58cf6b46571971b384b9cded0deee34794a83760b67212ff8de6f4c1319edf4b/_data
+```
+
+这种方式我们以后使用的非常多，因为我们通常会构建自己的镜像，假设构建镜像时没有挂载卷，要手动镜像挂载，:`-v 卷名：容器内路径`
+
+
+
+
+
+## 数据卷容器(多容器数据共享)
+
+多个容器间实现数据共享 
+
+<img src="images/Docker-Note/1616149433849.png" alt="1616149433849" style="zoom:80%;" />
+
+
+
+### **创建父容器**
+
+```shell
+[root@centos7 ~]# docker run -it --name docker01 majiang/centos:1.0 
+[root@2a37272f08d2 /]# ls -l
+total 60
+......
+drwxr-xr-x.   2 root root 4096 Mar 19 10:26 volume01
+drwxr-xr-x.   2 root root 4096 Mar 19 10:26 volume02
+[root@2a37272f08d2 /]# Ctrl + P + Q（退出其不停止容器）
+CONTAINER ID   IMAGE                 COMMAND                  CREATED          STATUS          PORTS                    NAMES
+9165cbe1355f   majiang/centos:1.0    "/bin/sh -c /bin/bash"   46 seconds ago   Up 42 seconds                            docker02
+
+
+```
+
+
+
+### **创建挂载容器**
+
+```shell
+[root@centos7 ~]# docker run -it --name docker02 --volumes-from docker01 majiang/centos:1.0
+[root@56ad40dc7106 /]# ls -l
+total 60
+........
+drwxr-xr-x.   2 root root 4096 Mar 19 10:26 volume01
+drwxr-xr-x.   2 root root 4096 Mar 19 10:26 volume02
+[root@56ad40dc7106 /]# 
+
+```
+
+关键：
+
+```shell
+--volumes-from docker01
+```
+
+
+
+**检查数据是否同步**
+
+**父容器docker01中的数据同步到容器docker02**
+
+父容器docker01：
+
+```shell
+[root@centos7 ~]# docker exec -it docker01 /bin/bash
+[root@2a37272f08d2 /]# cd volume01
+[root@2a37272f08d2 volume01]# touch docker01.txt
+[root@2a37272f08d2 volume01]# ls
+docker01.txt
+[root@2a37272f08d2 volume01]# 
+
+```
+
+容器docker02：
+
+```shell
+[root@centos7 ~]# docker exec -it docker02 /bin/bash
+[root@56ad40dc7106 /]# cd volume01
+[root@56ad40dc7106 volume01]# ls
+docker01.txt
+
+```
+
+
+
+**docker02的数据也会同步到父容器docker01中**
+
+容器docker02:
+
+```shell
+[root@56ad40dc7106 volume01]# touch docker02.txt
+[root@56ad40dc7106 volume01]# ls
+docker01.txt  docker02.txt
+
+
+```
+
+
+
+父容器docker01:
+
+```shell
+[root@2a37272f08d2 volume01]# ls
+docker01.txt  docker02.txt
+
+```
+
+
+
+### 创建第三个挂载容器
+
+**docker03**:
+
+```shell
+[root@centos7 ~]# docker run -it --name docker03 --volumes-from docker01 majiang/centos:1.0
+[root@69be3f6b78b4 /]# cd volume01
+
+#在docker03中创建一个文件
+[root@69be3f6b78b4 volume01]# touch docker03.txt
+[root@69be3f6b78b4 volume01]# ls
+docker01.txt  docker02.txt  docker03.txt
+[root@69be3f6b78b4 volume01]# 
+
+```
+
+
+
+docker03的数据同步到了docker01和docker02，如下所示：
+
+**docker01**:
+
+```shell
+[root@2a37272f08d2 volume01]# ls
+docker01.txt  docker02.txt  docker03.txt
+
+```
+
+**docker02**:
+
+```shell
+[root@56ad40dc7106 volume01]# ls
+docker01.txt  docker02.txt  docker03.txt
+
+```
+
+
+
+### 删除父容器
+
+删除掉父容器docker01，docker02和docker03的数据也还在
+
+
+
+### 结论
+
+通过`--volumes-from`能够实现多个Docker容器间的数据共享。
+
+**任何一个容器的数据改变都会同步到其它的容器中**
+
+> **猜测：应该是各个容器中的数据都是指向宿主机的同一个卷**
+
+
+
+验证猜测：
+
+<img src="images/Docker-Note/1616152443866.png" alt="1616152443866" style="zoom:80%;" />
+
+**结论：挂载的数据卷指向宿主机的同一个卷**
+
+```shell
+/var/lib/docker/volumes/f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a/_data
+和
+/var/lib/docker/volumes/f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a/_data      
+
+```
+
+
+
+### 应用
+
+多个mysql的docker共享数据
+
+容器间配置信息的传递
+
+
+
+具体的信息如下：
+
+**docker01**
+
+```shell
+[root@centos7 ~]# docker inspect docker01
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006",
+                "Source": "/var/lib/docker/volumes/124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006/_data",
+                "Destination": "volume01",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a",
+                "Source": "/var/lib/docker/volumes/f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a/_data",
+                "Destination": "volume02",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+
+```
+
+**docker02**:
+
+```shell
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a",
+                "Source": "/var/lib/docker/volumes/f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a/_data",
+                "Destination": "volume02",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006",
+                "Source": "/var/lib/docker/volumes/124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006/_data",
+                "Destination": "volume01",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+
+```
+
+
+
+**docker03**
+
+```shell
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006",
+                "Source": "/var/lib/docker/volumes/124c93581e2bbfc1f1dd945bf0e9e39ec7c99b2e249681e33d39a527808a4006/_data",
+                "Destination": "volume01",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a",
+                "Source": "/var/lib/docker/volumes/f164b7960594b9e7030fe5e73c6a13e9ba0377512efe9f664cdc2f747cbe152a/_data",
+                "Destination": "volume02",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+```
+
+
+
 
 
 
 
 # DockerFile
+
+## DockerFile 介绍
+
+dockerfile是用来构建docker镜像的文件，命令参数脚本
+
+构建步骤：
+
+1. 编写一个dockerfile文件
+2. docker build 构建成为一个镜像
+3. docker run 运行镜像
+4. docker push 发布镜像（可发布到: DockerHub、阿里云镜像仓库）
+
+
+
+直观感受下dockerfile:
+
+[CentOS Docker](https://hub.docker.com/_/centos)的[Dockerfile](https://github.com/CentOS/sig-cloud-instance-images/blob/ccd17799397027acf9ee6d660e75b8fce4c852e8/docker/Dockerfile) 文件：
+
+```shell
+FROM scratch
+ADD centos-8-x86_64.tar.xz /
+LABEL org.label-schema.schema-version="1.0"     org.label-schema.name="CentOS Base Image"     org.label-schema.vendor="CentOS"     org.label-schema.license="GPLv2"     org.label-schema.build-date="20201204"
+CMD ["/bin/bash"]
+```
+
+
+
+
+
+## Dockerfile指令说明
 
 
 
