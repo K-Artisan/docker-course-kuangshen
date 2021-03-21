@@ -30,6 +30,20 @@
 - Docker  Swarm
 - CI\CD jenkins
 
+
+
+# 环境搭建
+
+## 使用Linux虚拟机
+
+使用虚拟机，搭建CentOs 系统，参见教程：
+
+安装vmare：https://www.bilibili.com/video/BV1Sv411r7vd?p=5
+
+安装CentOS：https://www.bilibili.com/video/BV1Sv411r7vd?p=6
+
+
+
 # Docker概述
 
 ## Docker为什么会出现
@@ -1378,7 +1392,7 @@ PS C:\Users\wei> docker inspect 57f4ef66e9d4
 **方式一：**
 
 ```powershell
-docker exec -it 容器ID bash/bash
+docker exec -it 容器ID bin/bash
 ```
 
 示例：
@@ -3372,7 +3386,1906 @@ CMD ["/bin/bash"]
 
 
 
+## DockerFile构建过程
+
+如果想深入探求镜像是如何构建出来的，可以使用`docker history`命令,例如：
+
+```shell
+[root@centos7 ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED        SIZE
+majiang/centos        1.0       83f355b0d2df   41 hours ago   209MB
+
+[root@centos7 ~]# docker history 83f355b0d2df
+IMAGE          CREATED        CREATED BY                                      SIZE      COMMENT
+83f355b0d2df   41 hours ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "/bin…   0B        
+9b11cd0e5848   41 hours ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "echo…   0B        
+d07de828bf41   41 hours ago   /bin/sh -c #(nop)  VOLUME [volume01 volume02]   0B        
+300e315adb2f   3 months ago   /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B        
+<missing>      3 months ago   /bin/sh -c #(nop)  LABEL org.label-schema.sc…   0B        
+<missing>      3 months ago   /bin/sh -c #(nop) ADD file:bd7a2aed6ede423b7…   209MB 
+```
+
+
+
+
+
+
+
 ## Dockerfile指令说明
+
+​        这些指令包括FROM、RUN、EXPOSE、CMD、ENTRYPOINT、ADD、COPY、VOLUME、WORKDIR、USER、ONBUILD、LABEL、STOPSIGNAL、ARG和ENV等。可以在http://docs.docker.com/reference/builder/查看Dockerfile中可以使用的全部指令的清单。
+
+基础知识：
+
+1. 每个保留的关键字（指令）都必须是大写字母
+2. 执行是从上到下的顺序执行
+3. `#` 表示注释
+4. 每一个指令都会创建一个新的镜像层并提交
+
+<img src="images/Docker-Note/1616296949855.png" alt="1616296949855" style="zoom: 50%;" />
+
+
+
+dockerfile是面向开发的，项目发布，就要做镜像
+
+Docker镜像逐渐成为了企业交付的标准
+
+
+
+Dockerfile:构建文件，定义了其全部的构建步骤
+
+Docker镜像：通过Dockerfile构建生成的镜像，最终发布和运行的产品
+
+Docker容器：就是镜像运行起来提供服务器  
+
+
+
+<img src="images/Docker-Note/1616297423319.png" alt="1616297423319" style="zoom:80%;" />
+
+常用指令：
+
+<img src="images/Docker-Note/1616297482406.png" alt="1616297482406" style="zoom:80%;" />
+
+<img src="images/Docker-Note/1616297535210.png" alt="1616297535210" style="zoom:80%;" />
+
+
+
+```shell
+FROM          #基础镜像
+MAINTAINER    #镜像是书写的，姓名+邮箱
+RUN           #镜像构架的时候需要运行的命令
+ADD           #把本地目录或文件拷贝到镜像中，比如，我们要构建tomcat镜像，步骤：把本地做好的tomcat压缩               #包添加到镜像中
+COPY          #把本地目录或文件拷贝到镜像中，但是不能解压和提取压缩文件
+WORKDIR       #指定（可随时切换）镜像的工作目录
+VOLUME        #挂载（主机）目录
+EXPOSE        #暴露镜像对外端口
+CMD           #指定一个容器启动时要运行的命令,有多个CMD时，只有最后一个生效,会被dokcer run 的参数覆盖
+ENTRYPOINTE   #指定一个容器启动时要运行的命令,不会被 dokcer run 的参数覆盖，而且使用dokcer run的参数
+ONBUILD       #ONBUILD指令能为镜像添加触发器（trigger）。当一个镜像被用做其他镜像的基础镜像时，该镜像               #中的触发器将会被执行。                
+```
+
+
+
+### FROM
+
+​        基础镜像，一切从这里开始构建
+
+
+
+### CMD
+
+​        CMD指令用于指定一个容器启动时要运行的命令。这有点儿类似于RUN指令，只是RUN指令是指定镜像被构建时要运行的命令，而CMD是指定容器被启动时要运行的命令。这和使用docker run命令启动容器时指定要运行的命令非常类似，
+
+代码清单4-45　指定要运行的特定命令
+
+```shell
+$ sudo docker run -i -t jamtur01/static_web /bin/true
+```
+
+
+
+可以认为代码清单4-45所示的命令和在Dockerfile中使用代码清单4-46所示的CMD指令是等效的。
+代码清单4-46　使用CMD指令
+
+```shell
+CMD ["/bin/true"]
+```
+
+> **警告**
+> 需要注意的是，要运行的命令是存放在一个数组结构中的。这将告诉Docker按指定的原样来运行该命令。当然也可以不使用数组而是指定CMD指令，这时候Docker会在指定的命令前加上/bin/sh -c。这在执行该命令的时候可能会导致意料之外的行为，所以**Docker推荐一直使用以数组语法来设置要执行的命令**。
+
+
+
+当然也可以为要运行的命令指定参数，如代码清单4-47所示。
+代码清单4-47　给CMD指令传递参数
+
+```shell
+CMD ["/bin/bash", "-l"]
+```
+
+这里我们将`-l`标志传递给了`/bin/bash`命令。
+
+
+
+### ENTRYPOINT
+
+`ENTRYPOINT`指令与CMD指令非常类似，也很容易和CMD指令弄混。
+
+这两个指令到底有什么区别呢？
+
+为什么要同时保留这两条指令？
+
+正如我们已经了解到的那样，
+
+我们可以在`docker run`命令行中覆盖CMD指令。有时候，我们希望容器会按照我们想象的那样去工作，这时候CMD就不太合适了。
+
+而ENTRYPOINT指令提供的命令则不容易在启动容器时被覆盖。实际上，`docker run`命令行中指定的任何参数都会被当做参数再次传递给ENTRYPOINT指令中指定的命令。
+
+让我们来看一个ENTRYPOINT指令的例子，如代码清单4-51所示。
+代码清单4-51　指定ENTRYPOINT指令
+
+```shell
+ENTRYPOINT ["/usr/sbin/nginx"]
+```
+
+
+
+类似于CMD指令，我们也可以在该指令中通过数组的方式为命令指定相应的参数，如代码清单4-52所示。
+代码清单4-52　为ENTRYPOINT指令指定参数
+
+```shell
+ENTRYPOINT ["/usr/sbin/nginx", "-g", "daemon off;"]
+```
+
+
+
+> 注意
+> 从上面看到的CMD指令可以看到，我们通过以数组的方式指定ENTRYPOINT在想运行的命令前加入/bin/sh -c来避免各种问题。
+
+
+
+现在重新构建我们的镜像，并将`ENTRYPOINT`设置为`ENTRYPOINT ["/usr/sbin/ nginx"]`，如代码清单4-53所示。
+代码清单4-53　用新的ENTRYPOINT指令重新构建static_web镜像
+
+```shell
+$ sudo docker build -t="jamtur01/static_web" .
+```
+
+然后，我们从jamtur01/static_web镜像启动一个新容器，如代码清单4-54所示。
+
+代码清单4-54　使用docker run命令启动包含ENTRYPOINT指令的容器
+
+```shell
+$ sudo docker run –t -i jamtur01/static_web -g "daemon off;"
+```
+
+从上面可以看到，我们重新构建了镜像，并且启动了一个交互的容器。我们指定了`-g "daemon off;"`参数，这个参数会传递给用`ENTRYPOINT`指定的命令，在这里该命令为`/usr/sbin/nginx -g "daemon off;"`。该命令会以前台运行的方式启动Nginx
+
+
+
+### WORKDIR
+
+​         WORKDIR指令用来在从镜像创建一个新容器时，在容器内部设置一个工作目录，ENTRYPOINT和/或CMD指定的程序会在这个目录下执行。
+我们可以使用该指令为Dockerfile中后续的一系列指令设置工作目录，也可以为最终的容器设置工作目录。比如，我们可以如代码清单4-56所示这样为特定的指令设置不同的工作目录。
+
+代码清单4-56　使用WORKDIR指令
+
+```shell
+WORKDIR /opt/webapp/db　
+RUN bundle install　
+WORKDIR /opt/webapp　
+ENTRYPOINT [ "rackup" ]
+```
+
+这里，我们将工作目录切换为/opt/webapp/db后运行了bundle install命令，之后又将工作目录设置为/opt/webapp，最后设置了ENTRYPOINT指令来启动rackup命令。
+可以通过-w标志在运行时覆盖工作目录
+
+代码清单4-57　覆盖工作目录
+
+```shell
+$ sudo docker run -ti -w /var/log ubuntu pwd　
+/var/log
+```
+
+该命令会将容器内的工作目录设置为/var/log。
+
+
+
+### ENV
+
+ENV指令用来在镜像构建过程中设置环境变量
+
+
+
+
+
+### ADD
+
+ADD指令用来将构建环境下的文件和目录复制到镜像中。比如，在安装一个应用程序时。ADD指令需要源文件位置和目的文件位置两个参数
+
+
+
+
+
+最后值得一提的是，ADD在处理本地归档文件（tar archive）时还有一些小魔法。如果将一个归档文件（合法的归档文件包括gzip、bzip2、xz）指定为源文件，Docker会自动将归档文件解开（unpack）
+
+```shell
+ADD latest.tar.gz /var/www/wordpress
+```
+
+这条命令会将归档文件latest.tar.gz解开到/var/www/wordpress/目录下。Docker解开归档文件的行为和使用带-x选项的tar命令一样：该指令执行后的输出是原目的目录已经存在的内容加上归档文件中的内容。如果目的位置的目录下已经存在了和归档文件同名的文件或者目录，那么目的位置中的文件或者目录不会被覆盖。
+
+最后，如果目的位置不存在的话，Docker将会为我们创建这个全路径，包括路径中的任何目录。新创建的文件和目录的模式为0755，并且UID和GID都是0。
+
+
+
+### COPY
+
+COPY指令非常类似于ADD，它们根本的不同是COPY只关心在构建上下文中复制本地文件，而不会去做文件提取（extraction）和解压（decompression）的工作。
+
+文件源路径必须是一个与当前构建环境相对的文件或者目录，本地文件都放到和Dockerfile同一个目录下。不能复制该目录之外的任何文件，因为构建环境将会上传到Docker守护进程，而复制是在Docker守护进程中进行的。任何位于构建环境之外的东西都是不可用的。COPY指令的目的位置则必须是容器内部的一个绝对路径。
+任何由该指令创建的文件或者目录的UID和GID都会设置为0。
+如果源路径是一个目录，那么这个目录将整个被复制到容器中，包括文件系统元数据；如果源文件为任何类型的文件，则该文件会随同元数据一起被复制。在这个例子里，源路径以/结尾，所以Docker会认为它是目录，并将它复制到目的目录中。
+如果目的位置不存在，Docker将会自动创建所有需要的目录结构，就像mkdir -p命令那样。
+
+
+
+### LABEL
+
+LABEL指令用于为Docker镜像添加元数据。元数据以键值对的形式展现
+
+LABEL指令以label="value"的形式出现。可以在每一条指令中指定一个元数据，或者指定多个元数据，不同的元数据之间用空格分隔。推荐将所有的元数据都放到一条LABEL指令中，以防止不同的元数据指令创建过多镜像层。可以通过docker inspect命令来查看Docker镜像中的标签信息
+
+
+
+### ONBUILD
+
+ONBUILD指令能为镜像添加触发器（trigger）。当一个镜像被用做其他镜像的基础镜像时（比如用户的镜像需要从某未准备好的位置添加源代码，或者用户需要执行特定于构建镜像的环境的构建脚本），该镜像中的触发器将会被执行。
+触发器会在构建过程中插入新指令，我们可以认为这些指令是紧跟在FROM之后指定的。触发器可以是任何构建指令，比如代码清单4-78所示。
+代码清单4-78　添加ONBUILD指令
+
+```shell
+ONBUILD ADD . /app/src　
+ONBUILD RUN cd /app/src && make
+```
+
+上面的代码将会在创建的镜像中加入ONBUILD触发器，ONBUILD指令可以在镜像上运行docker inspect命令来查看，如代码清单4-79所示。
+
+代码清单4-79　通过docker inspect命令查看镜像中的ONBUILD指令$ sudo docker inspect 508efa4e4bf8　
+
+```shell
+. . .　
+"OnBuild": [　
+"ADD . /app/src",　
+"RUN cd /app/src/ && make"　
+]　
+. . .
+```
+
+
+
+## 实战：构建自己的CentOS
+
+Docker  Hub 中的99%的镜像都是从这个基础镜像`From scratch`作为基础镜像，然后需要的软件等进一步配置
+
+构建而来。
+
+创建一个自己的CentOS
+
+​        默认的CentOS没有vim，命令工具，我们自己创建一个CentOS，使其默认安装了vim和命令工具
+
+###  编写dockerfile文件
+
+```shell
+# 1.编写dockerfile文件
+[root@centos7 ~]# cd /home/docker-test
+[root@centos7 docker-test]# vim mydockerfile-centos
+FROM centos
+MAINTAINER majiang<majiangfang@126.com>
+
+ENV MYPATH /usr/local
+WORKDIR $MYPATH
+
+RUN yum -y install vim
+RUN yum -y install net-tools
+
+EXPOSE 80
+   
+CMD echo $MYPATH
+CMD echo "--------end--------"
+CMD /bin/bash
+
+#:wq
+
+```
+
+
+
+### 通过dockerfile文件构建镜像文件
+
+docker build 命令
+
+```shell
+docker build -f docker文件路径 -t 镜像名[:tag] PATH
+```
+
+ `PATH`参数既用于查找Dockerfile，又用于指定构建上下文。如果在PATH参数中没有找到Dockerfile(注意大小写)，就必须使用 -f 选项来具体给出Dockerfile文件 
+
+执行如下命令：
+
+```shell
+[root@centos7 docker-test]# docker build -f mydockerfile-centos -t mycentos:0.1 .
+
+Sending build context to Docker daemon  2.048kB
+Step 1/10 : FROM centos
+ ---> 300e315adb2f
+Step 2/10 : MAINTAINER majiang<majiangfang@126.com>
+ ---> Running in 7702ae9bac39
+Removing intermediate container 7702ae9bac39
+ ---> 400b98bf6e30
+Step 3/10 : ENV MYPATH /usr/local
+ ---> Running in b96c59ee1901
+Removing intermediate container b96c59ee1901
+ ---> 11a3ab682c3b
+Step 4/10 : WORKDIR $MYPATH
+ ---> Running in fd598308f498
+Removing intermediate container fd598308f498
+ ---> 724cd31c7e38
+Step 5/10 : RUN yum -y install vim
+ ---> Running in 421246610d4e
+CentOS Linux 8 - AppStream                      3.2 MB/s | 6.3 MB     00:01    
+CentOS Linux 8 - BaseOS                         1.4 MB/s | 2.3 MB     00:01    
+CentOS Linux 8 - Extras                         9.5 kB/s | 9.2 kB     00:00    
+Dependencies resolved.
+================================================================================
+ Package             Arch        Version                   Repository      Size
+================================================================================
+Installing:
+ vim-enhanced        x86_64      2:8.0.1763-15.el8         appstream      1.4 M
+Installing dependencies:
+ gpm-libs            x86_64      1.20.7-15.el8             appstream       39 k
+ vim-common          x86_64      2:8.0.1763-15.el8         appstream      6.3 M
+ vim-filesystem      noarch      2:8.0.1763-15.el8         appstream       48 k
+ which               x86_64      2.21-12.el8               baseos          49 k
+
+Transaction Summary
+================================================================================
+Install  5 Packages
+
+Total download size: 7.8 M
+Installed size: 30 M
+Downloading Packages:
+(1/5): gpm-libs-1.20.7-15.el8.x86_64.rpm        181 kB/s |  39 kB     00:00    
+(2/5): vim-filesystem-8.0.1763-15.el8.noarch.rp 440 kB/s |  48 kB     00:00    
+(3/5): which-2.21-12.el8.x86_64.rpm              70 kB/s |  49 kB     00:00    
+(4/5): vim-common-8.0.1763-15.el8.x86_64.rpm    4.4 MB/s | 6.3 MB     00:01    
+(5/5): vim-enhanced-8.0.1763-15.el8.x86_64.rpm  888 kB/s | 1.4 MB     00:01    
+--------------------------------------------------------------------------------
+Total                                           3.2 MB/s | 7.8 MB     00:02     
+warning: /var/cache/dnf/appstream-02e86d1c976ab532/packages/gpm-libs-1.20.7-15.el8.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID 8483c65d: NOKEY
+CentOS Linux 8 - AppStream                      421 kB/s | 1.6 kB     00:00    
+Importing GPG key 0x8483C65D:
+ Userid     : "CentOS (CentOS Official Signing Key) <security@centos.org>"
+ Fingerprint: 99DB 70FA E1D7 CE22 7FB6 4882 05B5 55B3 8483 C65D
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+Key imported successfully
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : which-2.21-12.el8.x86_64                               1/5 
+  Installing       : vim-filesystem-2:8.0.1763-15.el8.noarch                2/5 
+  Installing       : vim-common-2:8.0.1763-15.el8.x86_64                    3/5 
+  Installing       : gpm-libs-1.20.7-15.el8.x86_64                          4/5 
+  Running scriptlet: gpm-libs-1.20.7-15.el8.x86_64                          4/5 
+  Installing       : vim-enhanced-2:8.0.1763-15.el8.x86_64                  5/5 
+  Running scriptlet: vim-enhanced-2:8.0.1763-15.el8.x86_64                  5/5 
+  Running scriptlet: vim-common-2:8.0.1763-15.el8.x86_64                    5/5 
+  Verifying        : gpm-libs-1.20.7-15.el8.x86_64                          1/5 
+  Verifying        : vim-common-2:8.0.1763-15.el8.x86_64                    2/5 
+  Verifying        : vim-enhanced-2:8.0.1763-15.el8.x86_64                  3/5 
+  Verifying        : vim-filesystem-2:8.0.1763-15.el8.noarch                4/5 
+  Verifying        : which-2.21-12.el8.x86_64                               5/5 
+
+Installed:
+  gpm-libs-1.20.7-15.el8.x86_64         vim-common-2:8.0.1763-15.el8.x86_64    
+  vim-enhanced-2:8.0.1763-15.el8.x86_64 vim-filesystem-2:8.0.1763-15.el8.noarch
+  which-2.21-12.el8.x86_64             
+
+Complete!
+Removing intermediate container 421246610d4e
+ ---> ec6a7489ce77
+Step 6/10 : RUN yum -y install net-tools
+ ---> Running in a4e9b4c8876e
+Last metadata expiration check: 0:00:13 ago on Sun Mar 21 05:03:39 2021.
+Dependencies resolved.
+================================================================================
+ Package         Architecture Version                        Repository    Size
+================================================================================
+Installing:
+ net-tools       x86_64       2.0-0.52.20160912git.el8       baseos       322 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 322 k
+Installed size: 942 k
+Downloading Packages:
+net-tools-2.0-0.52.20160912git.el8.x86_64.rpm   472 kB/s | 322 kB     00:00    
+--------------------------------------------------------------------------------
+Total                                           272 kB/s | 322 kB     00:01     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : net-tools-2.0-0.52.20160912git.el8.x86_64              1/1 
+  Running scriptlet: net-tools-2.0-0.52.20160912git.el8.x86_64              1/1 
+  Verifying        : net-tools-2.0-0.52.20160912git.el8.x86_64              1/1 
+
+Installed:
+  net-tools-2.0-0.52.20160912git.el8.x86_64                                     
+
+Complete!
+Removing intermediate container a4e9b4c8876e
+ ---> 903b75c22ba7
+Step 7/10 : EXPOSE 80
+ ---> Running in b0e2beef9fe2
+Removing intermediate container b0e2beef9fe2
+ ---> 313530206896
+Step 8/10 : CMD echo $MYPATH
+ ---> Running in e068cc75e41f
+Removing intermediate container e068cc75e41f
+ ---> 4c431b210bd9
+Step 9/10 : CMD echo "--------end--------"
+ ---> Running in a7617ce920a4
+Removing intermediate container a7617ce920a4
+ ---> d1fb9b1af634
+Step 10/10 : CMD /bin/bash
+ ---> Running in 8b50ccb300ff
+Removing intermediate container 8b50ccb300ff
+ ---> 6e1f53c518ae
+Successfully built 6e1f53c518ae
+Successfully tagged mycentos:0.1
+
+# 查看镜像信息
+[root@centos7 docker-test]# docker images mycentos
+REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
+mycentos     0.1       6e1f53c518ae   2 minutes ago   291MB
+
+```
+
+
+
+### 测试运行
+
+```shell
+# 查看镜像信息
+[root@centos7 docker-test]# docker images mycentos
+REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
+mycentos     0.1       6e1f53c518ae   2 minutes ago   291MB
+
+[root@centos7 docker-test]# docker run -it mycentos:0.1
+
+# 默认的工作目录为 WORKDIR $MYPATH 即:/usr/local
+[root@6638012c5e8c local]# pwd 
+/usr/local #说明执行了dockerfile文件中的指令：WORKDIR $MYPATH，指定了工作目录
+
+#net-tools也可以用了
+[root@6638012c5e8c local]# ifconfig
+......
+
+# vim也可以用了
+[root@6638012c5e8c local]# vim testvim 
+.......
+```
+
+
+
+### 查看构建历史
+
+查看进行的构建历史：
+
+```shell
+[root@centos7 docker-test]# docker history mycentos:0.1
+IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
+6e1f53c518ae   35 minutes ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "/bin…   0B        d1fb9b1af634   35 minutes ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "echo…   0B        4c431b210bd9   35 minutes ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "echo…   0B        313530206896   35 minutes ago   /bin/sh -c #(nop)  EXPOSE 80                    0B        903b75c22ba7   35 minutes ago   /bin/sh -c yum -y install net-tools             23.4MB    ec6a7489ce77   35 minutes ago   /bin/sh -c yum -y install vim                   58.1MB    724cd31c7e38   35 minutes ago   /bin/sh -c #(nop) WORKDIR /usr/local            0B        11a3ab682c3b   35 minutes ago   /bin/sh -c #(nop)  ENV MYPATH=/usr/local        0B        400b98bf6e30   35 minutes ago   /bin/sh -c #(nop)  MAINTAINER majiang<majian…   0B        300e315adb2f   3 months ago     /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B        <missing>      3 months ago     /bin/sh -c #(nop)  LABEL org.label-schema.sc…   0B        <missing>      3 months ago     /bin/sh -c #(nop) ADD file:bd7a2aed6ede423b7…   209MB  
+```
+
+
+
+### 建议改进
+
+> 需要注意的是，要运行的命令是存放在一个数组结构中的。这将告诉Docker按指定的原样来运行该命令。当然也可以不使用数组而是指定CMD指令，这时候Docker会在指定的命令前加上/bin/sh -c。这在执行该命令的时候可能会导致意料之外的行为，所以Docker推荐一直使用以数组语法来设置要执行的命令。
+
+
+
+通过命令`dokcer history mycentos`,查看到，执行指令是，自动添加命名前缀`/bin/sh -c`,根据上述所示：
+
+```shell
+CMD /bin/bash
+```
+
+改进为使用数组形式：
+
+```shell
+CMD ["/bin/bash"]
+```
+
+实操：
+
+```shell
+[root@centos7 docker-test]# vim mydockerfile-centos 
+
+FROM centos
+MAINTAINER majiang<majiangfang@126.com>
+
+ENV MYPATH /usr/local
+WORKDIR $MYPATH
+
+RUN yum -y install vim
+RUN yum -y install net-tools
+
+EXPOSE 80
+
+CMD ["echo", "$MYPATH"]
+CMD ["echo", "--------end--------"]
+CMD ["/bin/bash"]
+
+
+```
+
+重新构建镜像：
+
+```shell
+[root@centos7 docker-test]# docker build -f mydockerfile-centos -t mycentos:0.2 .
+
+Sending build context to Docker daemon  2.048kB
+Step 1/10 : FROM centos
+ ---> 300e315adb2f
+Step 2/10 : MAINTAINER majiang<majiangfang@126.com>
+ ---> Using cache
+ ---> 400b98bf6e30
+Step 3/10 : ENV MYPATH /usr/local
+ ---> Using cache
+ ---> 11a3ab682c3b
+Step 4/10 : WORKDIR $MYPATH
+ ---> Using cache
+ ---> 724cd31c7e38
+Step 5/10 : RUN yum -y install vim
+ ---> Using cache
+ ---> ec6a7489ce77
+Step 6/10 : RUN yum -y install net-tools
+ ---> Using cache
+ ---> 903b75c22ba7
+Step 7/10 : EXPOSE 80
+ ---> Using cache
+ ---> 313530206896
+Step 8/10 : CMD ["echo", "$MYPATH"]
+ ---> Running in 5dad6d45198c
+Removing intermediate container 5dad6d45198c
+ ---> 763472334f7c
+Step 9/10 : CMD ["echo", "--------end--------"]
+ ---> Running in 5cef08790e55
+Removing intermediate container 5cef08790e55
+ ---> 12d26ed58ed0
+Step 10/10 : CMD ["/bin/bash"]
+ ---> Running in 3f066ede05fc
+Removing intermediate container 3f066ede05fc
+ ---> e9ea9f2edd5a
+Successfully built e9ea9f2edd5a
+Successfully tagged mycentos:0.2
+```
+
+
+
+运行镜像：
+
+```shell
+[root@centos7 docker-test]# docker run -it --name mycentos02  mycentos:0.2
+[root@9d9eedd8322d local]# pwd
+/usr/local
+
+```
+
+
+
+查看构建历史：
+
+```shell
+[root@centos7 docker-test]# docker history mycentos:0.2
+IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
+e9ea9f2edd5a   6 minutes ago    /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B        12d26ed58ed0   6 minutes ago    /bin/sh -c #(nop)  CMD ["echo" "--------end-…   0B        763472334f7c   6 minutes ago    /bin/sh -c #(nop)  CMD ["echo" "$MYPATH"]       0B        313530206896   53 minutes ago   /bin/sh -c #(nop)  EXPOSE 80                    0B        903b75c22ba7   53 minutes ago   /bin/sh -c yum -y install net-tools             23.4MB    ec6a7489ce77   53 minutes ago   /bin/sh -c yum -y install vim                   58.1MB    724cd31c7e38   54 minutes ago   /bin/sh -c #(nop) WORKDIR /usr/local            0B        11a3ab682c3b   54 minutes ago   /bin/sh -c #(nop)  ENV MYPATH=/usr/local        0B        400b98bf6e30   54 minutes ago   /bin/sh -c #(nop)  MAINTAINER majiang<majian…   0B        300e315adb2f   3 months ago     /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B        <missing>      3 months ago     /bin/sh -c #(nop)  LABEL org.label-schema.sc…   0B        <missing>      3 months ago     /bin/sh -c #(nop) ADD file:bd7a2aed6ede423b7…   209MB  
+```
+
+
+
+
+
+## 实战：CMD 和 ENTRYPOINT的区别
+
+我们可以在`docker run`命令行中覆盖CMD指令而ENTRYPOINT指令提供的命令则不容易在启动容器时被覆盖。实际上，`docker run`命令行中指定的任何参数都会被当做参数再次传递给ENTRYPOINT指令中指定的命令。
+
+
+
+**区别：`docker run`命令行中可以覆盖CMD指令，而ENTRYPOINT指令提供的命令则不容易在启动容器时被覆盖，且其可追加参数**
+
+### CMD
+
+创建镜像文件
+
+```shell
+[root@centos7 docker-test]# vim dockerfile-cmd-test
+FROM centos
+CMD ["ls", "-a"]
+
+#:wq
+```
+
+创建镜像：
+
+```shell
+[root@centos7 docker-test]# docker build -f dockerfile-cmd-test -t mycentos-cmd:0.1 .
+Sending build context to Docker daemon  3.072kB
+Step 1/2 : FROM centos
+ ---> 300e315adb2f
+Step 2/2 : CMD ["ls", "-a"]
+ ---> Running in 798417c11b0f
+Removing intermediate container 798417c11b0f
+ ---> a220945f8d7a
+Successfully built a220945f8d7a
+Successfully tagged mycentos-cmd:0.1
+```
+
+
+
+
+
+
+
+#### 使用CMD命令运行
+
+```shell
+# 注意，此时没有进入容器内部
+# 或者这样运行：docker run --name mycentos-cmd  mycentos-cmd:0.1
+[root@centos7 docker-test]# docker run -it --name mycentos-cmd  mycentos-cmd:0.1
+.   .dockerenv	dev  home  lib64       media  opt   root  sbin	sys  usr
+..  bin		etc  lib   lost+found  mnt    proc  run   srv	tmp  var
+```
+
+这时，容器`Exited`是退出状态,
+
+```shell
+[root@centos7 ~]# docker ps -a
+CONTAINER ID   IMAGE                 COMMAND                  CREATED             STATUS                        PORTS                    NAMES
+9323049fb973   mycentos-cmd:0.1      "ls -a"                  6 minutes ago       Exited (0) 6 minutes ago                               mycentos-cmd
+
+```
+
+ COMMAND一栏是：`"ls -a" `
+
+使用
+
+```shell
+[root@centos7 ~]# docker start 9323049fb973
+9323049fb973
+[root@centos7 ~]# docker ps 
+CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS          PORTS                    NAMES
+
+```
+
+也无法启动！！！
+
+
+
+#### 无法追加命名参数
+
+```shell
+
+# 无法追加命名
+[root@centos7 ~]# docker run --name mycentos-cmd-02  mycentos-cmd:0.1 -l
+docker: Error response from daemon: OCI runtime create failed: container_linux.go:367: starting container process caused: exec: "-l": executable file not found in $PATH: unknown.
+ERRO[0001] error waiting for container: context canceled 
+
+```
+
+无法追加命名，只能全部写出完整的命名：
+
+```
+[root@centos7 ~]# docker run  mycentos-cmd:0.1 ls -al
+total 60
+drwxr-xr-x.   1 root root 4096 Mar 21 07:05 .
+drwxr-xr-x.   1 root root 4096 Mar 21 07:05 ..
+-rwxr-xr-x.   1 root root    0 Mar 21 07:05 .dockerenv
+lrwxrwxrwx.   1 root root    7 Nov  3 15:22 bin -> usr/bin
+drwxr-xr-x.   5 root root  340 Mar 21 07:05 dev
+drwxr-xr-x.   1 root root 4096 Mar 21 07:05 etc
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 home
+lrwxrwxrwx.   1 root root    7 Nov  3 15:22 lib -> usr/lib
+lrwxrwxrwx.   1 root root    9 Nov  3 15:22 lib64 -> usr/lib64
+drwx------.   2 root root 4096 Dec  4 17:37 lost+found
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 media
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 mnt
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 opt
+dr-xr-xr-x. 237 root root    0 Mar 21 07:05 proc
+dr-xr-x---.   2 root root 4096 Dec  4 17:37 root
+drwxr-xr-x.  11 root root 4096 Dec  4 17:37 run
+lrwxrwxrwx.   1 root root    8 Nov  3 15:22 sbin -> usr/sbin
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 srv
+dr-xr-xr-x.  13 root root    0 Mar 21 03:08 sys
+drwxrwxrwt.   7 root root 4096 Dec  4 17:37 tmp
+drwxr-xr-x.  12 root root 4096 Dec  4 17:37 usr
+drwxr-xr-x.  20 root root 4096 Dec  4 17:37 var
+
+```
+
+> 这个容器状态是退出状态，且无法启动
+
+
+
+#### 命令可被可被覆盖
+
+传入参数`/bin/bash`,覆盖`CMD ["ls", "-a"]`，
+
+```shell
+[root@centos7 docker-test]# docker run -it mycentos-cmd:0.1 /bin/bash
+[root@7e529a2ab65b /]# 输入组合键[ctrl+p+q]:保持容器运行退出
+[root@centos7 docker-test]# docker ps 
+CONTAINER ID   IMAGE                 COMMAND             CREATED         STATUS              PORTS                    NAMES
+7e529a2ab65b   mycentos-cmd:0.1      "/bin/bash"         2 minutes ago   Up About a minute   
+```
+
+
+
+
+
+### ENTRYPOINT
+
+创建镜像文件
+
+```shell
+[root@centos7 docker-test]# vim dockerfile-entrypoint
+FROM centos
+ENTRYPOINT ["ls", "-a"]
+
+```
+
+创建镜像
+
+```shell
+[root@centos7 docker-test]# docker build -f dockerfile-entrypoint -t mycentos-entrypoint:0.1 .
+Sending build context to Docker daemon  4.096kB
+Step 1/2 : FROM centos
+ ---> 300e315adb2f
+Step 2/2 : ENTRYPOINT ["ls", "-a"]
+ ---> Running in 20e31025b68e
+Removing intermediate container 20e31025b68e
+ ---> ba03e4da3334
+Successfully built ba03e4da3334
+Successfully tagged mycentos-entrypoint:0.1
+
+```
+
+运行容器：
+
+```shell
+[root@centos7 docker-test]# docker run  mycentos-entrypoint:0.1
+.
+..
+.dockerenv
+bin
+dev
+etc
+home
+lib
+lib64
+lost+found
+media
+mnt
+opt
+proc
+root
+run
+sbin
+srv
+sys
+tmp
+usr
+var
+
+```
+
+
+
+#### 可追加命令参数
+
+```shell
+[root@centos7 docker-test]# docker run  mycentos-entrypoint:0.1 -l
+total 60
+drwxr-xr-x.   1 root root 4096 Mar 21 07:16 .
+drwxr-xr-x.   1 root root 4096 Mar 21 07:16 ..
+-rwxr-xr-x.   1 root root    0 Mar 21 07:16 .dockerenv
+lrwxrwxrwx.   1 root root    7 Nov  3 15:22 bin -> usr/bin
+drwxr-xr-x.   5 root root  340 Mar 21 07:16 dev
+drwxr-xr-x.   1 root root 4096 Mar 21 07:16 etc
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 home
+lrwxrwxrwx.   1 root root    7 Nov  3 15:22 lib -> usr/lib
+lrwxrwxrwx.   1 root root    9 Nov  3 15:22 lib64 -> usr/lib64
+drwx------.   2 root root 4096 Dec  4 17:37 lost+found
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 media
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 mnt
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 opt
+dr-xr-xr-x. 236 root root    0 Mar 21 07:16 proc
+dr-xr-x---.   2 root root 4096 Dec  4 17:37 root
+drwxr-xr-x.  11 root root 4096 Dec  4 17:37 run
+lrwxrwxrwx.   1 root root    8 Nov  3 15:22 sbin -> usr/sbin
+drwxr-xr-x.   2 root root 4096 Nov  3 15:22 srv
+dr-xr-xr-x.  13 root root    0 Mar 21 03:08 sys
+drwxrwxrwt.   7 root root 4096 Dec  4 17:37 tmp
+drwxr-xr-x.  12 root root 4096 Dec  4 17:37 usr
+drwxr-xr-x.  20 root root 4096 Dec  4 17:37 var
+
+```
+
+
+
+### 结论
+
+区别：`docker run`命令行中可以覆盖CMD指令，而ENTRYPOINT指令提供的命令则不容易在启动容器时被覆盖，且其可追加参数
+
+
+
+
+
+## 实战：Dockerfile制作tomcat镜像
+
+步骤：
+
+1. 准备镜像文件、tomcat压缩包、jdk的压缩包 
+2. 编写dockerfile文件
+
+
+
+### 下载tomcat
+
+官网：https://tomcat.apache.org/:
+
+tomcat9：https://tomcat.apache.org/download-90.cgi
+
+<img src="images/Docker-Note/1616317008181.png" alt="1616317008181" style="zoom:80%;" />
+
+点击下载，提取其压缩包下载地址
+
+https://mirrors.bfsu.edu.cn/apache/tomcat/tomcat-9/v9.0.44/bin/apache-tomcat-9.0.44.tar.gz
+
+```shell
+[root@centos7 docker-test]# mkdir tomcat
+[root@centos7 docker-test]# ls
+dockerfile-cmd-test  dockerfile-entrypoint  mydockerfile-centos  tomcat
+[root@centos7 docker-test]# cd tomcat
+[root@centos7 tomcat]# wget https://mirrors.bfsu.edu.cn/apache/tomcat/tomcat-9/v9.0.44/bin/apache-tomcat-9.0.44.tar.gz
+--2021-03-21 16:37:04--  https://mirrors.bfsu.edu.cn/apache/tomcat/tomcat-9/v9.0.44/bin/apache-tomcat-9.0.44.tar.gz
+正在解析主机 mirrors.bfsu.edu.cn (mirrors.bfsu.edu.cn)... 39.155.141.16, 2001:da8:20f:4435:4adf:37ff:fe55:2840
+正在连接 mirrors.bfsu.edu.cn (mirrors.bfsu.edu.cn)|39.155.141.16|:443... 已连接。
+已发出 HTTP 请求，正在等待回应... 200 OK
+长度：11487016 (11M) [application/octet-stream]
+正在保存至: “apache-tomcat-9.0.44.tar.gz”
+
+100%[===============================================================>] 11,487,016  6.75MB/s 用时 1.6s   
+
+2021-03-21 16:37:06 (6.75 MB/s) - 已保存 “apache-tomcat-9.0.44.tar.gz” [11487016/11487016])
+
+[root@centos7 tomcat]# ls
+apache-tomcat-9.0.44.tar.gz
+
+```
+
+
+
+### 下载jdk-8
+
+参考：https://blog.csdn.net/u010503427/article/details/80181190
+
+https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html
+
+| Linux x64 RPM Package        | 108.06 MB | [jdk-8u281-linux-x64.rpm](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html#license-lightbox) |
+| ---------------------------- | --------- | ------------------------------------------------------------ |
+| Linux x64 Compressed Archive | 137.06 MB | [jdk-8u281-linux-x64.tar.gz](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html#license-lightbox) |
+
+<img src="images/Docker-Note/1616317171865.png" alt="1616317171865" style="zoom:80%;" />
+
+
+
+点击下载，**需要登录**，然后获取其下载地址：
+
+https://download.oracle.com/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz?AuthParam=1616317324_e4ded420a1eee4f0a13f810c0f3c430b
+
+提取出其下载地址：
+
+```shell
+https://download.oracle.com/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz
+```
+
+拼接无登录下载地址：
+
+```shell
+wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" https://download.oracle.com/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz
+```
+
+在Linux系统中进行下载：
+
+```shell
+[root@centos7 tomcat]# wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" https://download.oracle.com/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz
+
+--2021-03-21 17:04:56--  https://download.oracle.com/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz
+正在解析主机 download.oracle.com (download.oracle.com)... 104.75.164.29
+正在连接 download.oracle.com (download.oracle.com)|104.75.164.29|:443... 已连接。
+已发出 HTTP 请求，正在等待回应... 302 Moved Temporarily
+位置：https://edelivery.oracle.com/akam/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz [跟随至新的 URL]
+--2021-03-21 17:04:56--  https://edelivery.oracle.com/akam/otn/java/jdk/8u281-b09/89d678f2be164786b292527658ca1605/jdk-8u281-linux-x64.tar.gz
+正在解析主机 edelivery.oracle.com (edelivery.oracle.com)... 223.119.151.201, 2600:1417:1000:89b::366, 2600:1417:1000:89d::366
+正在连接 edelivery.oracle.com (edelivery.oracle.com)|223.119.151.201|:443... 已连接。
+已发出 HTTP 请求，正在等待回应... 302 Moved Temporarily
+位置：https://login.oracle.com:443/oam/server/obrareq.cgi?encquery%3DXk%2FN7NShsmoMwrBAzMeAET8kZBcsJ1UnaLRxs%2BnYPqo4WY2q6YIqSJaHt6OOrgHHvamoMNQFy5HM8ouh0ZHni99cjbh%2BCa2QVgpMtnmgFtl2DZ9xhLmZb5PCtVWKL2S2DqIZa9RAL6U5fVbP2oWn9V76aw7FQ85xRrKoJf5Yh1TUoAOsOAwR95Yt6%2F1XIocqSbGhlQgfpt2wIF67RbQRPebNpHONZ2kf2ZaHJdnDWfWhtEpks9J1l9OHw%2Bs2gq5FiPTuKCQ%2FyrbgTNtT4CtcTcsJqTHBIB2M4gy5Aa7vqwsM302YNpOqMk5M%2FvjiHC6SGrWhve%2FYZe57Nk5%2BxEUnKzUoCFM0QMWeVn0b0dqGBVynKFUVg5aThHD%2FZKUZdFuvX01OrmKVA4w9UhfogZ6NOye0wjd%2BIP0PSa4OvTZTS6Q6QJ0PgVJQYkCN896PKmhZaRJriUeCXumZrNDyX8w1m9X1Fdi2Zxs7hpuRc4py06FCvE2NVq%2B%2B2s7Pbhf1pNy2o9xrjrlYDQYkDPPS96smDQ%3D%3D%20agentid%3Dedelivery-extprod%20ver%3D1%20crmethod%3D2&ECID-Context=1.005jWWyIJbrFo2KimTctkJ0004gT00167f%3BkXjE [跟随至新的 URL]
+--2021-03-21 17:04:57--  https://login.oracle.com/oam/server/obrareq.cgi?encquery%3DXk%2FN7NShsmoMwrBAzMeAET8kZBcsJ1UnaLRxs%2BnYPqo4WY2q6YIqSJaHt6OOrgHHvamoMNQFy5HM8ouh0ZHni99cjbh%2BCa2QVgpMtnmgFtl2DZ9xhLmZb5PCtVWKL2S2DqIZa9RAL6U5fVbP2oWn9V76aw7FQ85xRrKoJf5Yh1TUoAOsOAwR95Yt6%2F1XIocqSbGhlQgfpt2wIF67RbQRPebNpHONZ2kf2ZaHJdnDWfWhtEpks9J1l9OHw%2Bs2gq5FiPTuKCQ%2FyrbgTNtT4CtcTcsJqTHBIB2M4gy5Aa7vqwsM302YNpOqMk5M%2FvjiHC6SGrWhve%2FYZe57Nk5%2BxEUnKzUoCFM0QMWeVn0b0dqGBVynKFUVg5aThHD%2FZKUZdFuvX01OrmKVA4w9UhfogZ6NOye0wjd%2BIP0PSa4OvTZTS6Q6QJ0PgVJQYkCN896PKmhZaRJriUeCXumZrNDyX8w1m9X1Fdi2Zxs7hpuRc4py06FCvE2NVq%2B%2B2s7Pbhf1pNy2o9xrjrlYDQYkDPPS96smDQ%3D%3D%20agentid%3Dedelivery-extprod%20ver%3D1%20crmethod%3D2&ECID-Context=1.005jWWyIJbrFo2KimTctkJ0004gT00167f%3BkXjE
+正在解析主机 login.oracle.com (login.oracle.com)... 209.17.4.8
+正在连接 login.oracle.com (login.oracle.com)|209.17.4.8|:443... 已连接。
+已发出 HTTP 请求，正在等待回应... 200 OK
+长度：4122 (4.0K) [text/html]
+正在保存至: “jdk-8u281-linux-x64.tar.gz”
+
+100%[===============================================================>] 4,122       17.4KB/s 用时 0.2s   
+
+2021-03-21 17:04:59 (17.4 KB/s) - 已保存 “jdk-8u281-linux-x64.tar.gz” [4122/4122])
+
+[root@centos7 tomcat]# ls
+apache-tomcat-9.0.44.tar.gz  jdk-8u281-linux-x64.tar.gz
+
+```
+
+
+
+> **错误警告**
+>
+> 这种方式下载到的jdk文件有问题，并且无法解压：
+>
+> ```shell
+> [root@centos7 tomcat]# tar -xzvf jdk-8u281-linux-x64.tar.gz
+> #提示有问题，故：还是window10下载，然后拷贝到CentOS
+> ```
+>
+> 
+
+
+
+### 编写dockerfile文件
+
+推荐dockerfile统一命名为：`Dockerfile`，这样就不用使用`-f docker文件`去指定dockerfile文件了，`docker build命令默认查找并使用名称为`Dockerfile`的文件进行构建。
+
+参考资料：
+
+[centos（linux系统）wget下载安装jdk1.8](https://blog.csdn.net/u010503427/article/details/80181190)
+
+https://blog.csdn.net/nicolewjt/article/details/85257045
+
+
+
+```shell
+[root@centos7 tomcat]# pwd
+/home/docker-test/tomcat
+#建议都创建readme文件
+[root@centos7 tomcat]# touch readme.txt
+[root@centos7 tomcat]# ls
+apache-tomcat-9.0.44.tar.gz  jdk-8u281-linux-x64.tar.gz  readme.txt
+
+#创建Dockerfile文件
+[root@centos7 tomcat]# vim Dockerfile
+FROM centos
+MAINTAINER majiangfang<majiangfang@126.com>
+
+COPY readme.txt /usr/local/readme.txt
+
+#ADD 压缩包时，会自动解压
+ADD jdk-8u281-linux-x64.tar.gz /usr/local/
+ADD apache-tomcat-9.0.44.tar.gz /usr/local/
+
+RUN yum -y install vim
+
+ENV MYPATH /usr/local
+WORKDIR $MYPATH
+
+ENV JAVA_HOME /usr/local/jdk1.8.0_281
+ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+
+ENV CATALINA_HOME /usr/local/apache-tomcat-9.0.44
+ENV CATALINA_BASH /usr/local/apache-tomcat-9.0.44
+
+ENV PATH $PATH:$JAVA_HOME/bin:$CATALINA_HOME/lib:$CATALINA_HOME/bin
+
+EXPOSE 8080
+
+CMD /usr/local/apache-tomcat-9.0.44/bin/startup.sh && tail -F /usr/local/apache-tomcat-9.0.44/bin/logs/catalina.out
+
+
+
+```
+
+
+
+解析
+
+- 如何确定文件路径
+
+  先使用tar -xzvf 解压解压文件，看得到的文件目录是什么名称就使用该名称
+
+  ```shell
+  [root@centos7 tomcat]# tar -xzvf jdk-8u281-linux-x64.tar.gz
+  ......
+  [root@centos7 tomcat]# tar -xzvf apache-tomcat-9.0.44.tar.gz 
+  ......
+  
+  [root@centos7 tomcat]# ls
+  apache-tomcat-9.0.44  apache-tomcat-9.0.44.tar.gz  Dockerfile  jdk1.8.0_281  jdk-8u281-linux-x64.tar.gz  readme.txt 
+  ```
+
+  故：
+
+  tomcat文件目录是：
+
+  ```
+  apache-tomcat-9.0.44
+  ```
+
+​        jdk的文件目录是：
+
+        ```shell
+apache-tomcat-9.0.44
+        ```
+
+
+
+
+
+
+
+
+
+    - tail
+
+```shell
+tail -F 文件名
+```
+tail命令启动时，文件不可访问或者文件稍后变得不可访问，都始终尝试打开文件 
+
+
+
+
+
+### 构建镜像
+
+```shell
+docker build -t diytomcat .
+```
+
+执行：	
+
+```shell
+[root@centos7 tomcat]# docker build -t diytomcat .
+Sending build context to Docker daemon  529.1MB
+Step 1/15 : FROM centos
+ ---> 300e315adb2f
+Step 2/15 : MAINTAINER majiangfang<majiangfang@126.com>
+ ---> Running in 696f091a72cd
+Removing intermediate container 696f091a72cd
+ ---> 34034e78cc26
+Step 3/15 : COPY readme.txt /usr/local/readme.txt
+ ---> 65fc40730173
+Step 4/15 : ADD jdk-8u281-linux-x64.tar.gz /usr/local/
+ ---> 5ba1b486e737
+Step 5/15 : ADD apache-tomcat-9.0.44.tar.gz /usr/local/
+ ---> 266aae526e40
+Step 6/15 : RUN yum -y install vim
+ ---> Running in ab4c271a368d
+CentOS Linux 8 - AppStream                      2.5 MB/s | 6.3 MB     00:02    
+CentOS Linux 8 - BaseOS                         1.5 MB/s | 2.3 MB     00:01    
+CentOS Linux 8 - Extras                          12 kB/s | 9.2 kB     00:00    
+Dependencies resolved.
+================================================================================
+ Package             Arch        Version                   Repository      Size
+================================================================================
+Installing:
+ vim-enhanced        x86_64      2:8.0.1763-15.el8         appstream      1.4 M
+Installing dependencies:
+ gpm-libs            x86_64      1.20.7-15.el8             appstream       39 k
+ vim-common          x86_64      2:8.0.1763-15.el8         appstream      6.3 M
+ vim-filesystem      noarch      2:8.0.1763-15.el8         appstream       48 k
+ which               x86_64      2.21-12.el8               baseos          49 k
+
+Transaction Summary
+================================================================================
+Install  5 Packages
+
+Total download size: 7.8 M
+Installed size: 30 M
+Downloading Packages:
+(1/5): gpm-libs-1.20.7-15.el8.x86_64.rpm        116 kB/s |  39 kB     00:00    
+(2/5): vim-filesystem-8.0.1763-15.el8.noarch.rp  97 kB/s |  48 kB     00:00    
+(3/5): which-2.21-12.el8.x86_64.rpm             146 kB/s |  49 kB     00:00    
+(4/5): vim-enhanced-8.0.1763-15.el8.x86_64.rpm  383 kB/s | 1.4 MB     00:03    
+(5/5): vim-common-8.0.1763-15.el8.x86_64.rpm    600 kB/s | 6.3 MB     00:10    
+--------------------------------------------------------------------------------
+Total                                           679 kB/s | 7.8 MB     00:11     
+warning: /var/cache/dnf/appstream-02e86d1c976ab532/packages/gpm-libs-1.20.7-15.el8.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID 8483c65d: NOKEY
+CentOS Linux 8 - AppStream                      1.6 MB/s | 1.6 kB     00:00    
+Importing GPG key 0x8483C65D:
+ Userid     : "CentOS (CentOS Official Signing Key) <security@centos.org>"
+ Fingerprint: 99DB 70FA E1D7 CE22 7FB6 4882 05B5 55B3 8483 C65D
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+Key imported successfully
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                        1/1 
+  Installing       : which-2.21-12.el8.x86_64                               1/5 
+  Installing       : vim-filesystem-2:8.0.1763-15.el8.noarch                2/5 
+  Installing       : vim-common-2:8.0.1763-15.el8.x86_64                    3/5 
+  Installing       : gpm-libs-1.20.7-15.el8.x86_64                          4/5 
+  Running scriptlet: gpm-libs-1.20.7-15.el8.x86_64                          4/5 
+  Installing       : vim-enhanced-2:8.0.1763-15.el8.x86_64                  5/5 
+  Running scriptlet: vim-enhanced-2:8.0.1763-15.el8.x86_64                  5/5 
+  Running scriptlet: vim-common-2:8.0.1763-15.el8.x86_64                    5/5 
+  Verifying        : gpm-libs-1.20.7-15.el8.x86_64                          1/5 
+  Verifying        : vim-common-2:8.0.1763-15.el8.x86_64                    2/5 
+  Verifying        : vim-enhanced-2:8.0.1763-15.el8.x86_64                  3/5 
+  Verifying        : vim-filesystem-2:8.0.1763-15.el8.noarch                4/5 
+  Verifying        : which-2.21-12.el8.x86_64                               5/5 
+
+Installed:
+  gpm-libs-1.20.7-15.el8.x86_64         vim-common-2:8.0.1763-15.el8.x86_64    
+  vim-enhanced-2:8.0.1763-15.el8.x86_64 vim-filesystem-2:8.0.1763-15.el8.noarch
+  which-2.21-12.el8.x86_64             
+
+Complete!
+Removing intermediate container ab4c271a368d
+ ---> 1441f8812432
+Step 7/15 : ENV MYPATH /usr/local
+ ---> Running in cc3e953be555
+Removing intermediate container cc3e953be555
+ ---> e6eb7d1ee446
+Step 8/15 : WORKDIR $MYPATH
+ ---> Running in 8bfe3bb0cd9e
+Removing intermediate container 8bfe3bb0cd9e
+ ---> 99a3d1f03208
+Step 9/15 : ENV JAVA_HOME /usr/local/jdk1.8.0_281
+ ---> Running in 2248dea8dab8
+Removing intermediate container 2248dea8dab8
+ ---> 88a387532fd4
+Step 10/15 : ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+ ---> Running in 5076eccbdeb0
+Removing intermediate container 5076eccbdeb0
+ ---> a5e05c4f0b99
+Step 11/15 : ENV CATALINA_HOME /usr/local/apache-tomcat-9.0.44
+ ---> Running in b98078706081
+Removing intermediate container b98078706081
+ ---> 88f939885742
+Step 12/15 : ENV CATALINA_BASH /usr/local/apache-tomcat-9.0.44
+ ---> Running in 43b34bc9f49b
+Removing intermediate container 43b34bc9f49b
+ ---> 77f4fd3b3cc2
+Step 13/15 : ENV PATH $PATH:$JAVA_HOME/bin:$CATALINA_HOME/lib:$CATALINA_HOME/bin
+ ---> Running in 59ada3c42f5b
+Removing intermediate container 59ada3c42f5b
+ ---> f5d9f3890cb2
+Step 14/15 : EXPOSE 8080
+ ---> Running in 360716051f7a
+Removing intermediate container 360716051f7a
+ ---> 80e934439566
+Step 15/15 : CMD /usr/local/apache-tomcat-9.0.44/bin/startup.sh && tail -F /usr/local/apache-tomcat-9.0.44/bin/logs/catalina.out
+ ---> Running in d53c3aace6a3
+Removing intermediate container d53c3aace6a3
+ ---> ddd8d7ff9337
+Successfully built ddd8d7ff9337
+Successfully tagged diytomcat:latest
+
+```
+
+
+
+### 查看镜像信息
+
+```shell
+[root@centos7 tomcat]# docker images diytomcat
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+diytomcat    latest    82a46d785129   11 minutes ago   283MB
+
+
+```
+
+
+
+### 运行容器
+
+#### 使用 docker run -d
+
+```shell
+docker run -d -p 9090:8080 --name majiangtomcat  -v /home/docker-test/tomcat/test:/usr/local/apache-tomcat-9.0.44/webapps/test -v /home/docker-test/tomcat/tomcatlogs:/usr/local/apache-tomcat-9.0.44/logs diytomcat
+
+```
+
+
+
+执行：
+
+```shell
+[root@centos7 tomcat]# docker run -d -p 9090:8080 --name majiangtomcat\
+>    -v /home/docker-test/tomcat/test:/usr/local/apache-tomcat-9.0.44/webapps/test\
+>    -v /home/docker-test/tomcat/tomcatlogs:/usr/local/apache-tomcat-9.0.44/logs\
+>    diytomcat
+02ac00b23a24cf66eabe1c93700f7191cffd52275c36bac7430e7d1ce540be9f
+
+# 多出了两个挂载目录
+[root@centos7 tomcat]# ls
+apache-tomcat-9.0.44.tar.gz  Dockerfile  jdk-8u281-linux-x64.tar.gz  readme.txt  test  tomcatlogs
+
+```
+
+**这样启动，发现容器无法启动**，
+
+做如下检查：
+
+- 压缩包是否能正常解压
+
+```shell
+tar -xzvf jdk-8u281-linux-x64.tar.gz 
+tar -xzvf apache-tomcat-9.0.44.tar.gz
+```
+
+​     如果解压失败，重新下载
+
+- 使用启动的命名
+
+  上面我们使用
+
+  ```shell
+  docker run -d ..... 启动后容器无法启动
+  ```
+
+  这时我们改用
+
+  ```shell
+  docker run -it ........
+  ```
+
+
+
+#### 使用 docker run -it
+
+综上，我们使用如下命令启动
+
+```shell
+[root@centos7 tomcat]# docker run -it -p 9090:8080 --name majiangtomcat  -v /home/docker-test/tomcat/test:/usr/webapps/test -v /home/docker-test/tomcat/tomcatlogs:/usr/local/apache-tomcat-9.0.44/logs diytomcat
+Using CATALINA_BASE:   /usr/local/apache-tomcat-9.0.44
+Using CATALINA_HOME:   /usr/local/apache-tomcat-9.0.44
+Using CATALINA_TMPDIR: /usr/local/apache-tomcat-9.0.44/temp
+Using JRE_HOME:        /usr/local/jdk1.8.0_281
+Using CLASSPATH:       /usr/local/apache-tomcat-9.0.44/bin/bootstrap.jar:/usr/local/apache-tomcat-9.0.44/bin/t
+Using CATALINA_OPTS:   
+Tomcat started.
+tail: cannot open '/usr/local/apache-tomcat-9.0.44/bin/logs/catalina.out' for reading: No such file or directo
+
+### 找不到catalina.out，会卡在这里，输入组合键【ctrl + p + q】
+[root@centos7 tomcat]# 
+
+```
+
+
+
+查看`catalina.out`
+
+```shell
+[root@centos7 /]# docker exec -it majiangtomcat /bin/bash
+[root@7f7762659c0e local]# pwd
+/usr/local
+[root@7f7762659c0e local]# cd /usr/local/apache-tomcat-9.0.44/logs
+[root@7f7762659c0e logs]# ls
+catalina.2021-03-21.log  host-manager.2021-03-21.log  localhost_access_log.2021-03-21.txt
+catalina.out		 localhost.2021-03-21.log     manager.2021-03-21.log
+[root@centos7 /]# docker exec -it majiangtomcat /bin/bash
+[root@7f7762659c0e local]# tail -F /usr/local/apache-tomcat-9.0.44/logs/catalina.out
+21-Mar-2021 13:49:45.292 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/usr/local/apache-tomcat-9.0.44/webapps/manager]
+21-Mar-2021 13:49:45.317 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [/usr/local/apache-tomcat-9.0.44/webapps/manager] has finished in [25] ms
+21-Mar-2021 13:49:45.317 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/usr/local/apache-tomcat-9.0.44/webapps/examples]
+21-Mar-2021 13:49:45.578 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [/usr/local/apache-tomcat-9.0.44/webapps/examples] has finished in [261] ms
+21-Mar-2021 13:49:45.579 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/usr/local/apache-tomcat-9.0.44/webapps/docs]
+21-Mar-2021 13:49:45.597 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [/usr/local/apache-tomcat-9.0.44/webapps/docs] has finished in [18] ms
+21-Mar-2021 13:49:45.598 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/usr/local/apache-tomcat-9.0.44/webapps/test]
+21-Mar-2021 13:49:45.635 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [/usr/local/apache-tomcat-9.0.44/webapps/test] has finished in [38] ms
+21-Mar-2021 13:49:45.640 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+21-Mar-2021 13:49:45.655 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [738] milliseconds
+
+```
+
+
+
+### 验证是否成功
+
+这时，在宿主机打开浏览器访问：http://192.168.130.129:9090/
+
+<img src="images/Docker-Note/1616337152526.png" alt="1616337152526" style="zoom:50%;" />
+
+
+
+### 发布项目(本地发布)
+
+​		由于做了卷挂载，
+
+```shell
+-v /home/docker-test/tomcat/test:/usr/webapps/test
+```
+
+所以可以**直接在发布到本地目录**：`/home/docker-test/tomcat/test`
+
+```shell
+[root@centos7 ~]# cd /home/docker-test/tomcat
+[root@centos7 tomcat]# ls
+jdk1.8.0_281   readme.txt  apache-tomcat-9.0.44.tar.gz  Dockerfile  jdk-8u281-linux-x64.tar.gz  test  tomcatlogs
+```
+
+编写`web.xml`文件
+
+```shell
+[root@centos7 tomcat]# cd test
+[root@centos7 test]# mkdir WEB-INF
+[root@centos7 test]# cd WEB-INF/
+[root@centos7 WEB-INF]# pwd
+/home/docker-test/tomcat/test/WEB-INF
+[root@centos7 WEB-INF]# vim web.xml
+
+<?xml version="1.0" encoding="UTF-8"?><web-app version="2.4"     xmlns="http://java.sun.com/xml/ns/j2ee" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
+        http://java.sun.com/xml/ns/j2ee/web-app_2_5.xsd"
+    version="2.5" >
+
+
+</web-app>
+
+#：wq
+```
+
+
+
+编写`index.jsp`文件 
+
+```shell
+[root@centos7 WEB-INF]# cd ..
+[root@centos7 test]# pwd
+/home/docker-test/tomcat/test
+[root@centos7 test]# 
+
+[root@centos7 test]# vim index.jsp
+
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+
+<!DOCTYPE html>
+<html>
+    <head>
+           <title>第一个 JSP 程序</title>
+    </head>
+    <body>
+           <%
+                out.println("Hello World！");
+           %>
+
+   </body>
+</html>
+
+
+#:wq
+
+```
+
+
+
+在宿主机的浏览器中访问：http://192.168.130.129:9090/test/
+
+
+
+<img src="images/Docker-Note/1616341102990.png" alt="1616341102990" style="zoom:80%;" />
+
+### 查看日志 
+
+```shell
+[root@centos7 WEB-INF]# cd /home/docker-test/tomcat/tomcatlogs/
+[root@centos7 tomcatlogs]# ls
+catalina.2021-03-21.log  catalina.out  host-manager.2021-03-21.log  localhost.2021-03-21.log  localhost_access_log.2021-03-21.txt  manager.2021-03-21.log
+
+# 要跟踪名为 catalina.out 的文件的增长情况，此命令显示文件的最后 10 行
+#  显示一直继续，直到您按下（Ctrl-C）组合键停止显示
+[root@centos7 tomcatlogs]# tail -f catalina.out
+Hello World?
+Hello World?
+Hello World?
+Hello World?
+21-Mar-2021 15:33:47.380 INFO [Catalina-utility-1] org.apache.catalina.startup.HostConfig.reload Reloading context [/test]
+21-Mar-2021 15:33:47.380 INFO [Catalina-utility-1] org.apache.catalina.core.StandardContext.reload Reloading Context with name [/test] has started
+21-Mar-2021 15:33:47.430 INFO [Catalina-utility-1] org.apache.catalina.core.StandardContext.reload Reloading Context with name [/test] is completed
+21-Mar-2021 15:36:07.461 INFO [Catalina-utility-2] org.apache.catalina.startup.HostConfig.reload Reloading context [/test]
+21-Mar-2021 15:36:07.462 INFO [Catalina-utility-2] org.apache.catalina.core.StandardContext.reload Reloading Context with name [/test] has started
+21-Mar-2021 15:36:07.508 INFO [Catalina-utility-2] org.apache.catalina.core.StandardContext.reload Reloading Context with name [/test] is completed
+
+
+```
+
+
+
+
+
+# 发布镜像
+
+
+
+## 发布镜像到DockerHub
+
+准备：
+
+1.  到https://hub.docker.com/注册账号
+
+2. 确保账号可以登录
+
+3. 在我们的服务器上提交自己的镜像
+
+4. 登录`docker login`，然后提交镜像`dokcer push`
+
+   
+
+```shell
+[root@centos7 ~]# docker login --help
+
+Usage:  docker login [OPTIONS] [SERVER]
+
+Log in to a Docker registry.
+If no server is specified, the default is defined by the daemon.
+
+Options:
+  -p, --password string   Password
+      --password-stdin    Take the password from stdin
+  -u, --username string   Username
+
+```
+
+实战：
+
+上传`HelloWorld`镜像：
+
+```shell
+[root@centos7 ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED        SIZE
+hello-world           latest    d1165f221234   2 weeks ago    13.3kB
+
+root@centos7 ~]# docker push hello-world
+Using default tag: latest
+The push refers to repository [docker.io/library/hello-world]
+f22b99068db9: Layer already exists 
+errors:
+denied: requested access to the resource is denied
+unauthorized: authentication required # 又被拒绝！！！
+
+#镜像[hello-world],上传失败的原因是，hello-world的镜像名称是别人的
+#需要使用docker tag 改成自己的镜像名称：[dockerhub]/hello-world
+[root@centos7 ~]# docker tag hello-world weikai20007/hello-world 
+[root@centos7 ~]# docker images
+REPOSITORY                TAG       IMAGE ID       CREATED        SIZE
+hello-world               latest    d1165f221234   2 weeks ago    13.3kB
+#多出了一个镜像
+weikai20007/hello-world   latest    d1165f221234   2 weeks ago    13.3kB
+
+
+[root@centos7 ~]# docker push weikai20007/hello-world
+Using default tag: latest
+The push refers to repository [docker.io/weikai20007/hello-world]
+f22b99068db9: Mounted from library/hello-world 
+latest: digest: sha256:1b26826f602946860c279fce658f31050cff2c596583af237d971f4629b57792 size: 525
+```
+
+访问自己的镜像库：
+
+https://hub.docker.com/repositories
+
+都出了一个镜像文件
+
+<img src="images/Docker-Note/1616344295909.png" alt="1616344295909" style="zoom:80%;" />
+
+
+
+上传`diytomcat`
+
+```shell
+# 登录
+[root@centos7 ~]# docker login -u weikai20007
+Password: 
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+[root@centos7 ~]# docker images
+REPOSITORY            TAG       IMAGE ID       CREATED        SIZE
+diytomcat             latest    ddd8d7ff9337   2 hours ago    640MB
+hello-world           latest    d1165f221234   2 weeks ago    13.3kB
+
+
+# push
+[root@centos7 ~]# docker push diytomcat
+Using default tag: latest
+The push refers to repository [docker.io/library/diytomcat]
+7ef29b5f3c4b: Preparing 
+eab03787a4e1: Preparing 
+d7fa085b0120: Preparing 
+e3240190d4cd: Preparing 
+2653d992f4ef: Preparing 
+denied: requested access to the resource is denied #拒绝了
+
+
+[root@centos7 ~]# docker tag diytomcat weikai20007/diytomcat
+[root@centos7 ~]# docker images
+REPOSITORY                TAG       IMAGE ID       CREATED        SIZE
+diytomcat                 latest    ddd8d7ff9337   3 hours ago    640MB
+# 多出了一个镜像
+weikai20007/diytomcat     latest    ddd8d7ff9337   3 hours ago    640MB
+
+[root@centos7 ~]# docker push weikai20007/diytomcat
+Using default tag: latest
+The push refers to repository [docker.io/weikai20007/diytomcat]
+7ef29b5f3c4b: Pushing [==================================================>]  59.43MB
+eab03787a4e1: Pushed 
+d7fa085b0120: Pushed 
+e3240190d4cd: Pushed 
+2653d992f4ef: Pushed 
+
+```
+
+
+
+## 发布阿里云镜像
+
+### 开通镜像服务和相关设置
+
+登录阿里云https://www.aliyun.com
+
+在控制台菜单中搜索 容器服务，然后授权RAM什么
+
+<img src="images/Docker-Note/1616345615899.png" alt="1616345615899" style="zoom:80%;" />
+
+<img src="images/Docker-Note/1616345636438.png" alt="1616345636438" style="zoom:80%;" />
+
+点进去设置密码。
+
+<img src="images/Docker-Note/1616345739817.png" alt="1616345739817" style="zoom:80%;" />
+
+
+
+### 创建命名空间
+
+（一个账号只能创3个命名空间），例如：azirtime
+
+
+
+<img src="images/Docker-Note/1616346001334.png" alt="1616346001334" style="zoom:80%;" />
+
+<img src="images/Docker-Note/1616346104436.png" alt="1616346104436" style="zoom:80%;" />
+
+
+
+### 创建镜像仓库
+
+<img src="images/Docker-Note/1616346288932.png" alt="1616346288932" style="zoom: 67%;" />
+
+
+
+<img src="images/Docker-Note/1616346315543.png" alt="1616346315543" style="zoom:80%;" />
+
+
+
+选择【本地仓库】
+
+<img src="images/Docker-Note/1616346469250.png" alt="1616346469250" style="zoom:80%;" />
+
+
+
+### 查看仓储的说明
+
+
+
+<img src="images/Docker-Note/1616346700274.png" alt="1616346700274" style="zoom:80%;" />
+
+https://cr.console.aliyun.com/repository/cn-hangzhou/azirtime/azirtime-test/details
+
+
+
+azirtime-test
+
+华东1（杭州）|私有|本地仓库|正常
+
+ 部署应用
+
+修改信息
+
+基本信息
+
+- 仓库名称azirtime-test
+- 仓库地域华东1（杭州）
+- 仓库类型私有
+- 代码仓库无
+
+- 公网地址： registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test 
+- 专有网络复制 ：registry-vpc.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test
+- 经典网络复制 ：registry-internal.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test
+- 摘要azirtime-test for docker
+
+操作指南
+
+镜像描述
+
+1. 登录阿里云Docker Registry
+
+```shell
+$ sudo docker login --username=azirtime registry.cn-hangzhou.aliyuncs.com
+```
+
+用于登录的用户名为阿里云账号全名，密码为开通服务时设置的密码。
+
+您可以在访问凭证页面修改凭证密码。
+
+2. 从Registry中拉取镜像
+
+```shell
+$ sudo docker pull registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test:[镜像版本号]
+```
+
+3. 将镜像推送到Registry
+
+```shell
+$ sudo docker login --username=azirtime registry.cn-hangzhou.aliyuncs.com
+$ sudo docker tag [ImageId] registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test:[镜像版本号]
+$ sudo docker push registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test:[镜像版本号]
+```
+
+请根据实际镜像信息替换示例中的[ImageId]和[镜像版本号]参数。
+
+4. 选择合适的镜像仓库地址
+
+从ECS推送镜像时，可以选择使用镜像仓库内网地址。推送速度将得到提升并且将不会损耗您的公网流量。
+
+如果您使用的机器位于VPC网络，请使用 registry-vpc.cn-hangzhou.aliyuncs.com 作为Registry的域名登录。
+
+5.  示例
+
+使用"docker tag"命令重命名镜像，并将它通过专有网络地址推送至Registry。
+
+```shell
+$ sudo docker images
+REPOSITORY   TAG        IMAGE ID     CREATED             VIRTUAL SIZE
+registry.aliyuncs.com/acs/agent                                    0.7-dfb6816         37bb9c63c8b2        7 days ago          37.89 MB
+
+$ sudo docker tag 37bb9c63c8b2 registry-vpc.cn-hangzhou.aliyuncs.com/acs/agent:0.7-dfb6816
+```
+
+使用 "docker push" 命令将该镜像推送至远程。
+
+```shell
+$ sudo docker push registry-vpc.cn-hangzhou.aliyuncs.com/acs/agent:0.7-dfb6816
+```
+
+
+
+
+
+### 实操
+
+**登出之前的DockerHub账号**
+
+```shell
+
+[root@centos7 ~]# docker logout
+Removing login credentials for https://index.docker.io/v1/
+
+```
+
+
+
+**登录阿里云镜像**
+
+```shell
+[root@centos7 ~]# docker login --username=azirtime registry.cn-hangzhou.aliyuncs.com
+Password: 
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+
+```
+
+
+
+**修改镜像名称**
+
+```shell
+[root@centos7 ~]# docker images
+REPOSITORY                TAG       IMAGE ID       CREATED        SIZE
+hello-world               latest    d1165f221234   2 weeks ago    13.3kB
+weikai20007/hello-world   latest    d1165f221234   2 weeks ago    13.3kB
+
+```
+
+​       修改名称
+
+```shell
+[root@centos7 ~]# docker tag hello-world registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test:1.0
+[root@centos7 ~]# docker images
+REPOSITORY                TAG       IMAGE ID       CREATED        SIZE
+hello-world               latest    d1165f221234   2 weeks ago    13.3kB
+weikai20007/hello-world   latest    d1165f221234   2 
+registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test   1.0       d1165f221234   2 
+[root@centos7 ~]# 
+
+```
+
+
+
+**发布到阿里镜像库**
+
+```shell
+[root@centos7 ~]# docker push registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test:1.0
+The push refers to repository [registry.cn-hangzhou.aliyuncs.com/azirtime/azirtime-test]
+f22b99068db9: Pushed 
+1.0: digest: sha256:1b26826f602946860c279fce658f31050cff2c596583af237d971f4629b57792 size: 525
+
+```
+
+
+
+**查看镜像信息**
+
+<img src="images/Docker-Note/1616348592011.png" alt="1616348592011" style="zoom:80%;" />
+
+
+
+# Docker流程小结
+
+## Docker流程一览
+
+
+
+<img src="images/Docker-Note/1616348881010.png" alt="1616348881010" style="zoom:80%;" />
+
+
+
+
+
+## 镜像导入和导出
+
+
+
+<img src="images/Docker-Note/1616349000244.png" alt="1616349000244" style="zoom:60%;" />
+
+
+
+镜像打包成为一个压缩包tar压缩包，可以发送给别人或者备份
+
+
+
+**docker save**
+
+```shell
+[root@centos7 ~]# docker save --help
+
+Usage:  docker save [OPTIONS] IMAGE [IMAGE...]
+
+Save one or more images to a tar archive (streamed to STDOUT by default)
+
+Options:
+  -o, --output string   Write to a file, instead of STDOUT
+
+```
+
+ **docker load**
+
+```shell
+[root@centos7 ~]# docker load --help
+
+Usage:  docker load [OPTIONS]
+
+Load an image from a tar archive or STDIN
+
+Options:
+  -i, --input string   Read from tar archive file, instead of STDIN
+  -q, --quiet          Suppress the load output
+
+```
+
+
+
+### 实操：docker save / load
+
+https://docs.docker.com/engine/reference/commandline/load/
+
+
+
+```shell
+# 压缩备份
+[root@centos7 ~]# docker save -o hello-world-backup.tar hello-world
+[root@centos7 ~]# docker images hello-world 
+REPOSITORY    TAG       IMAGE ID       CREATED        SIZE
+hello-world  latest    d1165f221234   2 weeks ago    13.3kB
+
+[root@centos7 ~]# ls -l
+总用量 64
+-rw-------. 1 root root 24576 3月  22 02:03 hello-world-backup.tar
+......
+
+# 删除镜像文件
+[root@centos7 ~]# docker rmi hello-world
+Untagged: hello-world:latest
+Untagged: hello-world@sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24
+[root@centos7 ~]# docker images hello-world 
+REPOSITORY   TAG       IMAGE ID   CREATED   SIZE
+#镜像文件不存在了
+
+# 还原镜像文件
+[root@centos7 ~]# docker load  -i hello-world-backup.tar
+Loaded image: hello-world:latest
+[root@centos7 ~]# docker images hello-world 
+REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
+hello-world   latest    d1165f221234   2 weeks ago   13.3kB
+
+```
+
+
+
+### 拓展
+
+https://www.runoob.com/docker/docker-save-command.html
+
+docker 镜像导入导出有两种方法：
+
+一种是使用 save 和 load 命令
+
+使用例子如下：
+
+```
+docker save ubuntu:load>/root/ubuntu.tar
+docker load<ubuntu.tar
+```
+
+一种是使用 export 和 import 命令
+
+使用例子如下：
+
+```
+docker export 98ca36> ubuntu.tar
+cat ubuntu.tar | sudo docker import - ubuntu:import
+```
+
+需要注意两种方法不可混用。
+
+export 和 import 导出的是一个容器的快照, 不是镜像本身, 也就是说没有 layer。
+
+你的 dockerfile 里的 workdir, entrypoint 之类的所有东西都会丢失，commit 过的话也会丢失。
+
+快照文件将丢弃所有的历史记录和元数据信息（即仅保存容器当时的快照状态），而镜像存储文件将保存完整记录，体积也更大。
+
+-  docker save 保存的是镜像（image），docker export 保存的是容器（container）；
+-  docker load 用来载入镜像包，docker import 用来载入容器包，但两者都会恢复为镜像；
+-  docker load 不能对载入的镜像重命名，而 docker import 可以为镜像指定新名称。
 
 
 
