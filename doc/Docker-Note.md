@@ -193,13 +193,15 @@ https://docs.docker.com/engine/install/centos/
 
 ​       使用国内镜像，比如：阿里
 
-      ```shell
+```shell
    yum-config-manager \
         --add-repo \
         http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-      ```
+```
 
- 
+
+
+
 
 - 更新yum 软件包的索引
 
@@ -244,13 +246,13 @@ yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd
 
 ​       **设置Docker开机启动**
 
-      ```shell
+```shell
 systemctl start docker
 systemctl enable docker
-# reboot
-      ```
+```
 
-​      
+# reboot
+   
 
 ​     重启命令 ：
 
