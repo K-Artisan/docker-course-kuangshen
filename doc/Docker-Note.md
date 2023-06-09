@@ -252,7 +252,7 @@ systemctl enable docker
 ```
 
 # reboot
-   
+
 
 ​     重启命令 ：
 
@@ -470,7 +470,7 @@ Windos 10系统： Docker Desktop
 
 Docker是一个Client-server 结构的系统，Docker的守护进程运行在主机上，通过Socketcon从客户端访问，
 
-DockerServer接收到Docker-Client的指令，就会执行这个命名
+DockerServer接收到Docker-Client的指令，就会执行这个命令
 
 <img src="images/Docker-Note/1614137268132.png" alt="1614137268132" style="zoom:80%;" />
 
@@ -868,7 +868,7 @@ docker run [可选项] image [COMMAND] [ARG...]
 docker run -it centos /bin/bash
 ```
 
-` /bin/bash`命名是Linux系统下的控制台程序。
+` /bin/bash`命令是Linux系统下的控制台程序。
 
 <img src="images/Docker-Note/1614145593464.png" alt="1614145593464" style="zoom:80%;" />
 
@@ -877,7 +877,7 @@ docker run -it centos /bin/bash
 ```powershell
 # 测试，启动并进入容器
 PS C:\Users\wei> docker run -it centos /bin/bash
-[root@1b5b876a7037 /]# ls # 查看容器内Centos,基础版本，很多命名都不完善
+[root@1b5b876a7037 /]# ls # 查看容器内Centos,基础版本，很多命令都不完善
 bin  dev  etc  home  lib  lib64  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
 
 # 从容器中退回主机
@@ -2468,7 +2468,7 @@ https://www.jianshu.com/p/a5b17c6cbac3
  启动时加`--restart=always `
 
 ```shell
-docker run -it -p 8080:8080 mytomcat:1.0 --restart=always  ??# 不行
+docker run -it -p 8080:8080 --restart=always mytomcat:1.0 
 ```
 
 `--restart`参数值：
@@ -3908,7 +3908,7 @@ IMAGE          CREATED          CREATED BY                                      
 
 
 
-通过命令`dokcer history mycentos`,查看到，执行指令是，自动添加命名前缀`/bin/sh -c`,根据上述所示：
+通过命令`dokcer history mycentos`,查看到，执行指令是，自动添加命令前缀`/bin/sh -c`,根据上述所示：
 
 ```shell
 CMD /bin/bash
@@ -4086,18 +4086,18 @@ CONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS
 
 
 
-#### 无法追加命名参数
+#### 无法追加命令参数
 
 ```shell
 
-# 无法追加命名
+# 无法追加命令
 [root@centos7 ~]# docker run --name mycentos-cmd-02  mycentos-cmd:0.1 -l
 docker: Error response from daemon: OCI runtime create failed: container_linux.go:367: starting container process caused: exec: "-l": executable file not found in $PATH: unknown.
 ERRO[0001] error waiting for container: context canceled 
 
 ```
 
-无法追加命名，只能全部写出完整的命名：
+无法追加命令，只能全部写出完整的命令：
 
 ```
 [root@centos7 ~]# docker run  mycentos-cmd:0.1 ls -al
@@ -4652,7 +4652,7 @@ tar -xzvf apache-tomcat-9.0.44.tar.gz
 
 ​     如果解压失败，重新下载
 
-- 使用启动的命名
+- 使用启动的命令
 
   上面我们使用
 
@@ -5301,7 +5301,7 @@ export 和 import 导出的是一个容器的快照, 不是镜像本身, 也就�
 
 > Tips:
 >
-> ​       为了方便演示,这里使用如下两个命名把docker容器和镜像清空：
+> ​       为了方便演示,这里使用如下两个命令把docker容器和镜像清空：
 >
 > ```shell
 > docker rm -f $(docker ps -aq)
@@ -5601,7 +5601,7 @@ OpenStack，Docker容器间、OVS的连接，都是使用 evth-pair 技术
 # 进入容器 tomcat01
 [root@centos7 ~]# docker exec -it tomcat01 /bin/bash
 
-# tomcat01 ping Docker01（网关？）：通
+# tomcat01 ping Docker0（网关？）：通
 root@7e1b10691379:/usr/local/tomcat# ping -c 4 172.17.0.1
 PING 172.17.0.1 (172.17.0.1) 56(84) bytes of data.
 64 bytes from 172.17.0.1: icmp_seq=1 ttl=64 time=0.260 ms
@@ -5801,6 +5801,16 @@ f10e1136edbf   none      null      local
             }
         },
 ```
+
+
+
+> 进入容器，查看容器IP
+>
+> ```shell
+> docker exec -it container_id /bash/sh
+> cat /etc/hosts
+> ```
+> 更多命令参见：https://www.cnblogs.com/xyztank/articles/16595836.html
 
 
 
@@ -6128,7 +6138,7 @@ f10e1136edbf   none      null      local
 
 > `--subnet 192.168.0.0/16`: 
 >
-> 由`/16`可知子网掩码为：255.255.0.0 ，故网段(IP范围)为：192.168.0.1 ~ 192.168.255.255,
+> 由`/16`（子网掩码占16个bit）可知子网掩码为：255.255.0.0 ，故网段(IP范围)为：192.168.0.1 ~ 192.168.255.255,
 >
 > 那自然而然地，网关取：192.168.0.1 ，广播地址取：192.168.255.255
 
@@ -6418,7 +6428,7 @@ Options:
 
 
 
-创建网络**Docker0**中创建容器**tomcat01**
+在网络**Docker0**中创建容器**tomcat01**
 
 
 ```shell
