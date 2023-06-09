@@ -2,7 +2,7 @@
 
 # 资源
 
-[视频教程](https://www.bilibili.com/video/BV1og4y1q7M4?p=1)
+[【狂神说Java】Docker最新超详细版教程通俗易懂](https://www.bilibili.com/video/BV1og4y1q7M4?p=1)
 
 [Docker官网](https://www.docker.com/)
 
@@ -7006,6 +7006,16 @@ dd05353521d0ef4449f766e843a8a8ecff290c23 172.38.0.13:6379@16379 master,fail
 
 
 # 企业实战
+
+教程地址：[【狂神说Java】Docker进阶篇超详细版教程通俗易懂](https://www.bilibili.com/video/BV1kv411q7Qc?p=2) （不全）
+
+
+
+## 购买阿里云服务器
+
+付费方式：**按量付费**
+
+
 
 ## Docker Compose
 
